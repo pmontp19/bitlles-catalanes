@@ -1,0 +1,16 @@
+{
+  "name": "bitlles-catalanes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Joc de bitlles catalanes en pixel art isomètric, estètica Papers Please",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "serve": "python3 -m http.server 8787 -d public",
+    "test": "node test/mc.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
