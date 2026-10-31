@@ -1,0 +1,10 @@
+{
+  "name": "Bitlla!",
+  "short_name": "Bitlla!",
+  "lang": "ca",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#dfe3e6",
+  "theme_color": "#dfe3e6",
+  "start_url": "/"
+}

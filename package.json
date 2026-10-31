@@ -1,0 +1,30 @@
+{
+  "name": "bitlla",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "sim": "node --import tsx scripts/tune.ts",
+    "cf:dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "e2e": "node scripts/e2e.cjs"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.14.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261031.1",
+    "@types/three": "^0.170.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5",
+    "vitest": "^3.2.7",
+    "wrangler": "^4.156.0"
+  }
+}
