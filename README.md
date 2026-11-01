@@ -55,7 +55,7 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 
 ## Interfície
 
-Durant el joc, la interfície és neta i pla perquè no distregui. La resta té un toc d'esqueumorfisme: el menú és un rètol de fusta, les lliçons són notes clavades amb xinxeta, les regles són un llibret, i el final de partida és una acta escrita a mà. Les fonts (Zilla Slab, Caveat i Source Serif 4, llicència OFL) van allotjades al joc.
+Durant el joc, la interfície és neta i plana perquè no distregui. La resta té un toc d'esqueumorfisme: el menú és un rètol de fusta, les lliçons són notes clavades amb xinxeta, les regles són un llibret i el final de partida és una acta escrita a mà. Les fonts (Zilla Slab, Caveat i Source Serif 4, llicència OFL) van allotjades al joc.
 
 ## Estètiques
 
