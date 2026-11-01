@@ -21,6 +21,7 @@ src/game/input.ts      Gest (pantalla) → ThrowInput {aim, power, spin}. Funci�
 src/game/scene.ts      Render three.js (gris per defecte). Només llegeix estats; mai decideix regles. Exposa ganxos per a l'estètica.
 src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdols, pols, ombres de contacte, profunditat de camp.
 public/realisme/       Recursos CC0 (Poly Haven). Vegeu LLICENCIES.md abans d'afegir-ne.
+docs/referencies/      Fotos reals (Wikimedia Commons) amb autoria i llicència. Consulta-les abans de tocar formes o materials. No s'empaqueten.
 src/game/tutorial.ts   Lliçons (dades + funció `check`).
 src/game/feedback.ts   So i vibració. Punt únic per canviar-ho per Haptics natiu (Capacitor).
 src/main.ts            Màquina d'estats de la sessió (menú, tutorial, partida, diària) i HUD.
@@ -29,7 +30,7 @@ src/worker/index.ts    Worker de Cloudflare.
 
 Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene` només depèn de `constants` i tipus. No importis three.js a `rules`/`physics`.
 
-Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). Es carrega amb `import()` dinàmic a `main.ts` perquè el gris no pagui el pes. Mai toquis regles ni física des d'una estètica.
+Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia geometria visual (`pinGeo`, `clubGeo`, `decoratePin`), materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). Es carrega amb `import()` dinàmic a `main.ts` perquè el gris no pagui el pes. Mai toquis regles ni física des d'una estètica.
 
 Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
 

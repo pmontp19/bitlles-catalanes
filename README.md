@@ -61,7 +61,7 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 | `?q=baixa` | Realisme sense postprocessat i amb ombres i còdols reduïts, per a mòbils modestos. |
 | `?fps` | Mostra els fotogrames per segon per provar el rendiment en mòbils reals. |
 
-Els recursos del realisme són CC0 de [Poly Haven](https://polyhaven.com) (vegeu [public/realisme/LLICENCIES.md](public/realisme/LLICENCIES.md)) i pesen uns 7,5 MB. Per guanyar més realisme, el pas següent és escanejar bitlles i bitllots de debò i una pista real.
+Les formes i colors del realisme es basen en fotos reals de bitlles catalanes recollides a [docs/referencies](docs/referencies/README.md). Els recursos del realisme són CC0 de [Poly Haven](https://polyhaven.com) (vegeu [public/realisme/LLICENCIES.md](public/realisme/LLICENCIES.md)) i pesen uns 7,5 MB. Per guanyar més realisme, el pas següent és escanejar bitlles i bitllots de debò i una pista real.
 
 ## Desenvolupament
 

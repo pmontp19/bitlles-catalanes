@@ -26,6 +26,41 @@ function loadTex(loader: THREE.TextureLoader, file: string, srgb: boolean, repea
   });
 }
 
+/** Perfil visual de la bitlla segons fotos reals (docs/referencies): cos gairebé cilíndric amb ranures de torn,
+ *  espatlla, coll estret i cap en bola. Mides del reglament: 510 mm, base 90 mm, cap 65 mm. */
+export function pinProfileDetall(): [number, number][] {
+  const pts: [number, number][] = [[0, 0], [0.044, 0], [0.0455, 0.004]];
+  const grooves = [0.035, 0.15, 0.27];
+  for (let y = 0.01; y <= 0.3; y += 0.005) {
+    let r = 0.0455 - (y / 0.3) * 0.0045;
+    for (const g of grooves) if (Math.abs(y - g) < 0.004) r -= 0.0018;
+    pts.push([r, y]);
+  }
+  for (let k = 1; k <= 12; k++) { // espatlla
+    const t = k / 12;
+    pts.push([0.041 - (0.041 - 0.0205) * (0.5 - 0.5 * Math.cos(t * Math.PI)), 0.3 + t * 0.085]);
+  }
+  pts.push([0.0195, 0.41], [0.02, 0.452]);
+  const cy = 0.4775, R = 0.0325; // cap: bola de 65 mm
+  for (let a = -52; a <= 90; a += 8) {
+    const th = (a * Math.PI) / 180;
+    pts.push([Math.max(0.0005, R * Math.cos(th)), cy + R * Math.sin(th)]);
+  }
+  pts.push([0, 0.51]);
+  return pts;
+}
+
+/** Bitllot en forma de pera (fotos reals): part ampla arrodonida de 80 mm, transició i mànec de 40 mm. */
+export function clubProfileDetall(): [number, number][] {
+  const pts: [number, number][] = [[0, -0.12]];
+  for (let a = -90; a <= 0; a += 10) { // cul arrodonit
+    const th = (a * Math.PI) / 180;
+    pts.push([0.04 * Math.cos(th), -0.085 + 0.035 * Math.sin(th)]);
+  }
+  pts.push([0.04, -0.05], [0.038, -0.02], [0.033, 0.0], [0.026, 0.015], [0.021, 0.03], [0.02, 0.06], [0.019, 0.14], [0.022, 0.15], [0.02, 0.158], [0, 0.16]);
+  return pts;
+}
+
 /** Línia de calç: textura d'alfa amb vores irregulars i esquitxos. */
 function chalkAlpha(): THREE.Texture {
   const c = document.createElement('canvas');
@@ -232,15 +267,29 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
   gs.setDistance(gs.distance);
 
   // ---- Bitlles d'alzina: cada una amb la veta desplaçada i un to lleugerament diferent ----
-  const tones = [0xffffff, 0xf3e9dc, 0xfaf0e4, 0xeee2d2, 0xfff6ea, 0xf0e4d6];
+  // To mel envernissat, com els jocs nous de les fotos; cada bitlla una mica diferent.
+  const tones = [0xf2c896, 0xe8bb88, 0xf5cf9f, 0xe3b27c, 0xf0c48e, 0xe9bf8c];
   const pinMats = tones.map((tone, i) => {
     const off = (t: THREE.Texture) => { const c = t.clone(); c.offset.set(i * 0.17, i * 0.31); c.repeat.set(0.6, 1.2); return c; };
     return new THREE.MeshPhysicalMaterial({
       map: off(wD), normalMap: off(wN), roughnessMap: off(wA), aoMap: off(wA), color: tone,
-      roughness: 0.85, metalness: 0, clearcoat: 0.15, clearcoatRoughness: 0.6,
+      roughness: 0.8, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.45,
     });
   });
   gs.pinMatFor = (i) => pinMats[i % pinMats.length];
+  const lathe = (p: [number, number][], seg: number) => new THREE.LatheGeometry(p.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+  gs.pinGeo = lathe(pinProfileDetall(), 40);
+  gs.clubGeo = lathe(clubProfileDetall(), 32);
+  // Anelles pintades al coll, com molts jocs reals: vermella i groga.
+  const paint = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
+  const red = paint(0xb8322a), yellow = paint(0xe0b23a);
+  const band = (y0: number, y1: number) => lathe([[0, y0], [0.0212, y0], [0.0212, y1], [0, y1]].map(([r, y]) => [r + (y > 0.4 ? 0 : 0.0006), y]) as [number, number][], 32);
+  const bandRed = band(0.392, 0.402), bandYellow = band(0.404, 0.409);
+  gs.decoratePin = (g) => {
+    const a = new THREE.Mesh(bandRed, red), b = new THREE.Mesh(bandYellow, yellow);
+    a.castShadow = b.castShadow = true;
+    g.add(a, b);
+  };
   gs.ringMat = new THREE.MeshStandardMaterial({ map: fD, normalMap: fN, roughnessMap: fA, metalnessMap: fA, roughness: 1, metalness: 1 });
 
   // ---- Bitllots: la mateixa fusta, tenyida segons el tipus ----

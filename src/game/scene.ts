@@ -34,8 +34,9 @@ export class GameScene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
-  private pinGeo = lathe(PIN_PROFILE, 28);
-  private clubGeo = lathe(CLUB_PROFILE, 24);
+  /** Geometria visual (l'estètica la pot detallar; la física fa servir el perfil de `constants`). */
+  pinGeo: THREE.BufferGeometry = lathe(PIN_PROFILE, 28);
+  clubGeo: THREE.BufferGeometry = lathe(CLUB_PROFILE, 24);
   pinMat = new THREE.MeshStandardMaterial({ color: COLORS.pin, roughness: 0.6 });
   ringMat: THREE.Material = new THREE.MeshStandardMaterial({ color: COLORS.ring, roughness: 0.5, metalness: 0.4 });
   // ---- Ganxos per a l'estètica ----
@@ -45,6 +46,8 @@ export class GameScene {
   clubMatFor: (color: number) => THREE.Material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
   /** Pista: superfície i línies per a una distància de llançament. */
   laneFor: (d: number) => THREE.Object3D[] = (d) => this.greyLane(d);
+  /** Detalls afegits a cada bitlla (anelles pintades...). */
+  decoratePin: (g: THREE.Group, i: number) => void = () => {};
   /** Quan una bitlla passa a estar tombada (pols, so...). */
   onKnockDown: (x: number, z: number) => void = () => {};
   /** Després de moure les bitlles (ombres de contacte...). */
@@ -162,6 +165,7 @@ export class GameScene {
       ring.position.y = 0.012;
       ring.castShadow = true;
       g.add(body, ring);
+      this.decoratePin(g, i);
       g.visible = p;
       this.scene.add(g);
       this.pinMeshes.push(g);
