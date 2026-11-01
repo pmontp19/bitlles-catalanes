@@ -16,7 +16,7 @@ require('fs').mkdirSync(OUT, { recursive: true });
   const waitThrow = () => p.waitForFunction(() => window.__bitlla.S.phase !== 'flight', null, { timeout: 240000 });
 
   await p.goto(URL_ + '?tutorial=0' + Q); await p.waitForSelector('.card');
-  await p.screenshot({ path: `${OUT}/01-leccio.png` });
+  await p.screenshot({ path: `${OUT}/01-leccio.png`, timeout: 180000 });
   for (let i = 0; i < 12; i++) {
     if (await p.$('text=Ja saps jugar')) break;
     const btn = await p.$('button:has-text("Som-hi"), button:has-text("Continua")');
@@ -37,12 +37,12 @@ require('fs').mkdirSync(OUT, { recursive: true });
       const dx = (Math.random() - 0.5) * 60;
       await swipe([[195, 700], [195 + dx / 2, 560], [195 + dx, 380 + Math.random() * 60]]);
       await waitThrow();
-      await p.screenshot({ path: `${OUT}/02-tirada.png` });
+      await p.screenshot({ path: `${OUT}/02-tirada.png`, timeout: 180000 });
     }
     await p.waitForTimeout(300);
   }
   await p.waitForTimeout(500);
-  await p.screenshot({ path: `${OUT}/03-final.png` });
+  await p.screenshot({ path: `${OUT}/03-final.png`, timeout: 180000 });
   const S = await p.evaluate(() => window.__bitlla.S);
   console.log('tirades:', S.partida.results.length, '·', S.partida.results.map((r) => `${r.label}:${r.total}`).join(' '));
   await b.close();
