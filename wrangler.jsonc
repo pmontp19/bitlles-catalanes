@@ -8,5 +8,15 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
-  }
+  },
+  // Rànquing de la plantada del dia. Crea la base de dades amb `npx wrangler d1 create bitlla`,
+  // posa aquí el database_id que et doni i aplica les migracions (vegeu README).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bitlla",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
 }

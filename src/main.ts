@@ -6,6 +6,7 @@ import { cheer, knock, unlockAudio, vibrate } from './game/feedback';
 import { LESSONS, type Lesson } from './game/tutorial';
 import { PAGINES, questionari, type Pregunta } from './game/regles';
 import { clubIcon } from './game/art';
+import { dailyDate, dailyPlan, minutsFinsDema, netejaAlies, ordinal, type TiradaEnviada } from './game/diaria';
 import {
   ALL_BITLLOTS, BITLLOTS, newPartida, partidaScore, planFromSeed, pushResult, rondaOf, scoreTirada, shareText, tiradaOver,
   TOTAL_TIRADES, type BitllotKind, type DailyPlan, type Partida, type TiradaResult,
@@ -41,6 +42,8 @@ const S = {
   lesson: 0,
   plan: planFromSeed(1) as DailyPlan,
   dailyDate: '',
+  /** Tirades de la partida en curs, tal com s'envien al servidor. */
+  log: [] as TiradaEnviada[],
   partida: newPartida() as Partida,
   tirada: 0,
   hand: ['alzina', 'boix', 'cinta'] as BitllotKind[],
@@ -62,7 +65,7 @@ const distanceFor = () => (S.mode === 'tutorial' ? LESSONS[S.lesson].distance : 
 
 // ---------- Overlay (targetes) ----------
 type Btn = { label: string; sub?: string; primary?: boolean; flat?: boolean; onClick: () => void };
-type Variant = 'paper' | 'note' | 'book' | 'acta' | 'board';
+type Variant = 'paper' | 'note' | 'book' | 'acta' | 'board' | 'pissarra';
 
 function button(b: Btn) {
   const el = document.createElement('button');
@@ -93,6 +96,7 @@ function menu() {
   const done = store.get('tutorial-fet') === '1';
   const regles = store.get('regles-fet') === '1';
   const best = Number(store.get('millor') ?? 0);
+  const avui = diariaGuardada(dailyDate());
   card(
     `<div class="board-sign wood"><h1 class="logo">Bitlla!</h1><div class="board-sub">Bitlles catalanes</div></div>
      <div class="board-paper paper">
@@ -108,7 +112,7 @@ function menu() {
     { label: 'Aprèn a jugar', sub: done ? 'Controls i mecàniques' : 'Comença per aquí: 7 lliçons curtes', primary: !done, onClick: () => startTutorial(0) },
     { label: 'Les regles del joc', sub: regles ? 'El reglament de les bitlles catalanes' : 'El reglament real, il·lustrat', onClick: () => showRegles(0) },
     { label: 'Partida ràpida', sub: '9 tirades a 9,5 m', primary: done, onClick: () => startPartida('partida') },
-    { label: 'Plantada del dia', sub: 'La mateixa per a tothom', onClick: () => void startDaily() },
+    { label: 'Plantada del dia', sub: avui ? `Avui: ${partidaScore(avui.partida)} punts · nova d'aquí a ${fins(minutsFinsDema())}` : 'Un intent al dia, igual per a tothom', onClick: () => void startDaily() },
   ];
   for (const b of items) actions.appendChild(button(b));
 }
@@ -252,6 +256,7 @@ function startPartida(mode: 'partida' | 'daily', plan?: DailyPlan) {
   S.mode = mode;
   S.plan = plan ?? planFromSeed((Math.random() * 2 ** 31) | 0, 0);
   S.partida = newPartida();
+  S.log = [];
   S.tirada = 0;
   S.ghost = null;
   hud.goal.hidden = true;
@@ -259,15 +264,89 @@ function startPartida(mode: 'partida' | 'daily', plan?: DailyPlan) {
   chooseBench();
 }
 
+// ---------- Plantada del dia: un intent per dia i rànquing ----------
+type DiariaGuardada = { partida: Partida; log: TiradaEnviada[]; enviada?: boolean; rank?: number; count?: number };
+const diariaKey = (date: string) => `diaria:${date}`;
+function diariaGuardada(date: string): DiariaGuardada | null {
+  try { return JSON.parse(store.get(diariaKey(date)) ?? 'null'); } catch { return null; }
+}
+function jugador(): string {
+  let id = store.get('jugador');
+  if (!id) {
+    id = (crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`).toLowerCase();
+    store.set('jugador', id);
+  }
+  return id;
+}
+function fins(minuts: number) {
+  const h = Math.floor(minuts / 60), m = minuts % 60;
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+
 async function startDaily() {
-  let date = new Date().toISOString().slice(0, 10);
-  let seed = [...date].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
+  // La data i la llavor es calculen igual al client i al servidor; el servidor mana si respon.
+  let date = dailyDate();
   try {
     const r = await fetch('/api/daily');
-    if (r.ok) { const j = (await r.json()) as { date: string; seed: number }; date = j.date; seed = j.seed; }
-  } catch { /* sense xarxa: llavor local */ }
+    if (r.ok) { const j = (await r.json()) as { date: string }; date = j.date; }
+  } catch { /* sense xarxa: data local */ }
   S.dailyDate = date;
-  startPartida('daily', planFromSeed(seed));
+  const ja = diariaGuardada(date);
+  if (ja) { S.mode = 'daily'; S.partida = ja.partida; S.log = ja.log; return showActa(ja); }
+  startPartida('daily', dailyPlan(date));
+}
+
+/** Demana l'àlies (un sol cop) i envia la partida al rànquing. */
+async function enviaDiaria(g: DiariaGuardada) {
+  const alies = store.get('alies');
+  if (!alies) return demanaAlies(g);
+  try {
+    const r = await fetch('/api/daily/score', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ date: S.dailyDate, player: jugador(), name: alies, tirades: g.log }),
+    });
+    if (r.ok) {
+      const j = (await r.json()) as { rank: number; count: number };
+      Object.assign(g, { enviada: true, rank: j.rank, count: j.count });
+      store.set(diariaKey(S.dailyDate), JSON.stringify(g));
+    }
+  } catch { /* sense xarxa: es reintentarà en obrir la plantada */ }
+  showActa(g);
+}
+
+function demanaAlies(g: DiariaGuardada) {
+  card(`<div class="step">Rànquing de la plantada del dia</div><h2>Com et diem?</h2>
+    <p class="small">El teu àlies sortirà al rànquing. Només el demanem una vegada.</p>
+    <label class="field"><span>Àlies</span><input id="alies" maxlength="20" autocomplete="nickname" placeholder="p. ex. Pere de Vilanova"></label>
+    <p class="small" id="alies-err" hidden>Ha de tenir entre 2 i 20 lletres.</p>`, [
+    { label: 'Envia al rànquing', primary: true, onClick: () => {
+      const n = netejaAlies(($('alies') as HTMLInputElement).value);
+      if (!n) { $('alies-err').hidden = false; return; }
+      store.set('alies', n);
+      void enviaDiaria(g);
+    } },
+    { label: 'Ara no', flat: true, onClick: () => showActa(g) },
+  ], 'paper');
+  setTimeout(() => ($('alies') as HTMLInputElement | null)?.focus(), 50);
+}
+
+async function showRanking() {
+  card(`<div class="slate-head">Rànquing · ${S.dailyDate}</div><div class="slate-list" id="rank-list"><p>Carregant…</p></div>`, [
+    { label: 'Tanca', onClick: () => { const g = diariaGuardada(S.dailyDate); if (g) showActa(g); else menu(); } },
+  ], 'pissarra');
+  const list = $('rank-list');
+  try {
+    const r = await fetch(`/api/daily/ranking?player=${encodeURIComponent(jugador())}`);
+    if (!r.ok) throw new Error(String(r.status));
+    const j = (await r.json()) as { count: number; top: { name: string; total: number; bitlles: number }[]; me: { rank: number; total: number } | null };
+    const alies = store.get('alies');
+    list.innerHTML = j.top.length
+      ? `<ol>${j.top.map((t, i) => `<li class="${t.name === alies && j.me && j.me.rank === i + 1 ? 'me' : ''}"><span class="pos">${i + 1}</span><span class="nom">${t.name.replace(/[&<>]/g, '')}</span><span class="pts">${t.total}</span></li>`).join('')}</ol>
+         <p class="peu">${j.count} ${j.count === 1 ? 'jugador' : 'jugadors'} avui${j.me && j.me.rank > 20 ? ` · tu ets el ${ordinal(j.me.rank)} amb ${j.me.total}` : ''}</p>`
+      : '<p>Encara no hi ha ningú. Sigues el primer!</p>';
+  } catch {
+    list.innerHTML = '<p>El rànquing no està disponible ara mateix.</p>';
+  }
 }
 
 /** Tria 3 de 4: a l'inici de cada ronda, el jugador deixa un bitllot a la banqueta. */
@@ -304,6 +383,7 @@ function tiradaSettled() {
   if (!tiradaOver(down, S.used.length)) return toAim();
   const r = scoreTirada(down, S.pubilla, S.used.length, S.partida.nextMultiplier);
   S.partida = pushResult(S.partida, r);
+  S.log.push({ down: [...down], used: S.used.length });
   S.phase = 'result';
   showResult(r);
   hud.score.textContent = String(partidaScore(S.partida));
@@ -334,26 +414,51 @@ function endPartida() {
   S.phase = 'end';
   const total = partidaScore(S.partida);
   const best = Number(store.get('millor') ?? 0);
+  const record = total > best && best > 0;
   if (total > best) store.set('millor', String(total));
-  const title = S.mode === 'daily' ? `Bitlla! ${S.dailyDate}` : 'Bitlla!';
-  const text = shareText(S.partida, title);
-  const bitlles = S.partida.results.filter((r) => r.knocked === 5).length;
+  if (S.mode === 'daily') {
+    // Un sol intent per dia: es desa abans d'enviar-la.
+    const g: DiariaGuardada = { partida: S.partida, log: S.log };
+    store.set(diariaKey(S.dailyDate), JSON.stringify(g));
+    return void enviaDiaria(g);
+  }
+  showActa(null, record);
+}
+
+/** Acta de la partida en curs (o de la plantada del dia ja jugada). */
+function showActa(g: DiariaGuardada | null, record = false) {
+  S.phase = 'end';
+  hud.root.hidden = true;
+  const daily = S.mode === 'daily';
+  const p = S.partida;
+  const total = partidaScore(p);
+  const text = shareText(p, daily ? `Bitlla! ${S.dailyDate}` : 'Bitlla!') + (daily && g?.rank ? `\n${ordinal(g.rank)} de ${g.count}` : '');
+  const bitlles = p.results.filter((r) => r.knocked === 5).length;
   const cell = (r?: TiradaResult) => r
     ? `<div class="cell ${r.knocked === 5 ? 'bitlla' : ''}">${r.total}<small>${r.label === 'bitlla d\'or' ? 'or' : r.label === 'bitlla' ? 'bitlla' : r.label === 'llenya' ? 'llenya' : `${r.knocked} tomb.`}</small></div>`
     : '<div class="cell"></div>';
-  const rows = [0, 1, 2].map((rd) => `<div class="rh">Ronda ${rd + 1}</div>${[0, 1, 2].map((t) => cell(S.partida.results[rd * 3 + t])).join('')}`).join('');
-  card(`<div class="acta-head"><span>Acta de la partida</span><span>${S.mode === 'daily' ? S.dailyDate : 'Partida ràpida'}</span></div>
-    <div class="acta-grid">${rows}</div>
-    <div class="acta-total"><div><p class="small">${bitlles} bitlles de 9 tirades</p>${total > best && best ? '<span class="stamp gold" style="font-size:20px;margin-top:6px">Rècord</span>' : ''}</div><span class="num">${total}</span></div>
-    <pre class="share" id="share-text">${text}</pre>`, [
+  const rows = [0, 1, 2].map((rd) => `<div class="rh">Ronda ${rd + 1}</div>${[0, 1, 2].map((t) => cell(p.results[rd * 3 + t])).join('')}`).join('');
+  const posicio = daily
+    ? g?.rank ? `<p class="posicio">${ordinal(g.rank)} de ${g.count} avui</p>` : `<p class="small">${g?.enviada === false || !g?.enviada ? 'No s\'ha pogut enviar al rànquing.' : ''}</p>`
+    : '';
+  const dema = daily ? `<p class="small">Nova plantada d'aquí a ${fins(minutsFinsDema())}.</p>` : '';
+  const buttons: Btn[] = [
     { label: 'Copia el resultat', primary: true, onClick: () => {
       navigator.clipboard?.writeText(text).then(() => { hud.hint.textContent = 'Copiat'; }).catch(() => {
         const sel = getSelection(); const r = document.createRange(); r.selectNodeContents($('share-text')); sel?.removeAllRanges(); sel?.addRange(r);
       });
     } },
-    { label: 'Torna a jugar', onClick: () => (S.mode === 'daily' ? void startDaily() : startPartida('partida')) },
-    { label: 'Menú', flat: true, onClick: menu },
-  ], 'acta');
+  ];
+  if (daily) {
+    buttons.push({ label: 'Rànquing del dia', onClick: () => void showRanking() });
+    if (g && !g.enviada) buttons.push({ label: store.get('alies') ? 'Torna a enviar' : 'Envia al rànquing', onClick: () => void enviaDiaria(g) });
+  } else buttons.push({ label: 'Torna a jugar', onClick: () => startPartida('partida') });
+  buttons.push({ label: 'Menú', flat: true, onClick: menu });
+  card(`<div class="acta-head"><span>Acta de la partida</span><span>${daily ? S.dailyDate : 'Partida ràpida'}</span></div>
+    <div class="acta-grid">${rows}</div>
+    <div class="acta-total"><div><p class="small">${bitlles} bitlles de 9 tirades</p>${posicio}${record ? '<span class="stamp gold" style="font-size:20px;margin-top:6px">Rècord</span>' : ''}</div><span class="num">${total}</span></div>
+    ${dema}
+    <pre class="share" id="share-text">${text}</pre>`, buttons, 'acta');
 }
 
 // ---------- Tirada (comú) ----------
@@ -564,6 +669,6 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.has('tutorial')) startTutorial(Number(params.get('tutorial')) || 0);
   else menu();
-  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe, scene: () => scene, endPartida };
+  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe, scene: () => scene, endPartida, showActa };
 }
 void boot();

@@ -44,7 +44,7 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 - **Aprèn a jugar:** set lliçons jugables sobre el *control* del joc: llançar, apuntar, efecte, triar el bitllot al bastidor, deixar-ne una, la pubilla i el tria 3 de 4 amb els bitllots estalviats. El menú el proposa com a primera opció fins que l'acabes o el saltes.
 - **Les regles del joc:** llibret il·lustrat del reglament real (el joc, el material, la plantada, la tirada, la puntuació, bitlla tombada i la partida) i un qüestionari de cinc preguntes per posar-se a prova.
 - **Partida ràpida:** 9 tirades a 9,5 m.
-- **Plantada del dia:** la mateixa pubilla i el mateix vent per a tothom. En acabar es pot copiar el resultat per compartir-lo:
+- **Plantada del dia:** la mateixa pubilla i el mateix vent per a tothom, **un sol intent al dia** (canvia a mitjanit, hora de Catalunya). En acabar surt la posició al rànquing, que es veu en una pissarra, i es pot copiar el resultat per compartir-lo:
 
   ```
   Bitlla! 2026-11-01 · 68 punts
@@ -102,22 +102,31 @@ src/worker/index.ts    Worker de Cloudflare
 
 ## Desplegament a Cloudflare Workers
 
-El Worker (`src/worker/index.ts`) serveix `dist/` amb Static Assets i respon `GET /api/daily` amb `{ date, seed }` per a la plantada del dia.
+El Worker (`src/worker/index.ts`) serveix `dist/` amb Static Assets i l'API de la plantada del dia:
 
-**Automàtic des de GitHub:** al tauler de Cloudflare, *Workers & Pages* → *Create* → *Import a repository*, tria aquest repositori i la branca `main`, amb l'ordre de compilació `npm run build` i l'ordre de desplegament `npx wrangler deploy`. Cada canvi a `main` es desplegarà sol.
+| Ruta | Què fa |
+|---|---|
+| `GET /api/daily` | Data (hora de Catalunya), llavor i minuts que falten per a la propera |
+| `POST /api/daily/score` | Envia una partida. El servidor la **recalcula** a partir de les tirades (bitlles tombades i bitllots llançats) amb la pubilla real del dia; només compta el primer intent de cada jugador |
+| `GET /api/daily/ranking` | Els 20 millors del dia i la posició del jugador |
 
-**Des de terminal:**
+El rànquing es guarda a **Cloudflare D1**. Cal crear la base de dades una vegada:
 
 ```sh
 npx wrangler login
+npx wrangler d1 create bitlla            # copia el database_id a wrangler.jsonc
+npx wrangler d1 migrations apply bitlla --remote
 npm run deploy
 ```
+
+Per provar-ho en local: `npx wrangler d1 migrations apply bitlla --local` i `npm run cf:dev`. Sense D1, la plantada del dia funciona igual però sense rànquing.
+
+**Automàtic des de GitHub:** al tauler de Cloudflare, *Workers & Pages* → *Create* → *Import a repository*, tria aquest repositori i la branca `main`, amb l'ordre de compilació `npm run build` i l'ordre de desplegament `npx wrangler deploy`. Cada canvi a `main` es desplegarà sol (la base de dades D1 s'ha de crear abans, un sol cop).
 
 ## Properes passes
 
 - Decidir l'estètica (propostes A–G: diorama, toon, trencadís, riso, revetlla, còmic XIII, realisme). Del realisme: provar-ne el rendiment en mòbils reals, escanejar bitlles de debò i comprimir les textures a KTX2.
 - Ajustar el gest i la dificultat amb jugadors reals.
-- Rànquing de la plantada del dia (D1 o Durable Object).
 - Gira de festes majors: pobles amb modificadors (terra molla, pendent, tramuntana, revetlla).
 - App per a les botigues amb Capacitor (vibració nativa a iPhone, notificacions).
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dailySeed } from '../src/worker/index';
+import { dailySeed } from '../src/game/diaria';
 
 describe('plantada del dia', () => {
   it('la llavor és estable per dia i canvia entre dies', () => {

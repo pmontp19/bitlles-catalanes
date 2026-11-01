@@ -31,7 +31,9 @@ src/game/feedback.ts   So i vibració. Punt únic per canviar-ho per Haptics nat
 src/main.ts            Màquina d'estats (menú, tutorial, regles, qüestionari, partida, diària, acta) i HUD.
 src/style.css          HUD de joc net; menús, lliçons, llibret i acta esqueuomòrfics (fusta, paper, placa esmaltada, segell).
 public/fonts/          Zilla Slab (rètols), Caveat (mà/guix), Source Serif 4 (llibret). OFL, allotjades al joc.
-src/worker/index.ts    Worker de Cloudflare.
+src/game/diaria.ts     Plantada del dia, compartit client/servidor: data (Europe/Madrid), llavor, verificació de partides, àlies.
+src/worker/index.ts    Worker de Cloudflare: Static Assets + API de la plantada (rànquing a D1, binding `DB`).
+migrations/            Esquema de D1. Canvis d'esquema: nova migració, mai editar una d'aplicada.
 ```
 
 Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene` només depèn de `constants` i tipus. No importis three.js a `rules`/`physics`.
@@ -60,6 +62,10 @@ Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllot
 ## Interfície
 
 El HUD de joc (marcador, bitlles, bastidor, objectiu, resultat, transportador) és net i pla, sense materials. L'esqueumorfisme és per a la resta: cada targeta és un material (`card(html, botons, variant)`): `board` (rètol de fusta, menú), `note` (nota clavada, lliçons), `book` (llibret), `acta` (full de partida), `paper`. Botons: `.btn` (placa de fusta), `.btn.primary` (placa esmaltada verda), `.btn.flat` (enllaç). Resultats amb `.stamp` (segell de tinta). Textures només amb CSS/SVG; res d'imatges.
+
+## Plantada del dia
+
+El servidor no es fia del client: rep `{down, used}` de cada tirada i recalcula la puntuació amb `verificaPartida` (mateixes regles que el joc, pubilla real del dia). Un intent per jugador i dia (clau `(date, player)`); el client també ho desa a `localStorage` (`diaria:<data>`). Prova local: `npx wrangler d1 migrations apply bitlla --local` i `npm run cf:dev`.
 
 ## Convencions
 
