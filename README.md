@@ -57,6 +57,8 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 | Paràmetre | Què fa |
 |---|---|
 | `?estil=realisme` (per defecte) | Llum d'una foto HDR real d'un parc de Palerm, terra de sauló, bitlles de fusta d'alzina amb anella de ferro, còdols, pols quan cauen, ombres de contacte i profunditat de camp. |
+| `?escenari=vilanova` (per defecte) | Pista de Vilanova i la Geltrú: sauló clar, tanca verda amb xarxa i pistes numerades, fanals, pèrgola, rètol i bitlles amb el cap pintat. |
+| `?escenari=parc` | Parc amb terra i plàtans, llum suau de tarda i bitlles amb anelles pintades al coll. |
 | `?estil=gris` | Versió en gris per centrar-se en la mecànica. |
 | `?q=baixa` | Realisme sense postprocessat i amb ombres i còdols reduïts, per a mòbils modestos. |
 | `?fps` | Mostra els fotogrames per segon per provar el rendiment en mòbils reals. |

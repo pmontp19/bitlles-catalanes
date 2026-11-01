@@ -10,11 +10,44 @@ import type { CameraMode, GameScene, PostFX } from './scene';
 export type Quality = 'alta' | 'baixa';
 const BASE = '/realisme/';
 
-/** Direcció del sol dins la foto (calculada del píxel més brillant) i gir per tenir-lo a l'esquerra del tirador. */
-const SUN_IN_PHOTO = new THREE.Vector3(0.578, 0.625, 0.524);
-const ROT_Y = -2.04;
-/** Alçada aproximada de la càmera que va fer la foto: fixa l'escala del terra projectat. */
-const PHOTO_HEIGHT = 1.7;
+export type EscenariId = 'vilanova' | 'parc';
+
+/** Un escenari: foto 360° (llum i fons), terra, i com es marquen pista i bitlles. */
+type Escenari = {
+  hdr: string;
+  pano: string;
+  /** Direcció del sol dins la foto (calculada del píxel més brillant). */
+  sunInPhoto: THREE.Vector3;
+  /** Gir de la foto perquè la càmera miri cap a la part bonica i el sol il·lumini bé. */
+  rotY: number;
+  /** Alçada aproximada de la càmera que va fer la foto: fixa l'escala del terra projectat. */
+  photoHeight: number;
+  groundDiffuse: string;
+  /** Mida del terra texturat (amplada, llargada) i el seu centre en z. */
+  ground: [number, number, number];
+  sun: number;
+  env: number;
+  exposure: number;
+  /** Línies de la pista: calç (parc) o cordill amb barres blanques (Vilanova). */
+  lines: 'calc' | 'cordill';
+  /** Pintura de les bitlles: anelles al coll o cap pintat. */
+  paint: 'anelles' | 'cap';
+  pebbles: number;
+};
+
+const ESCENARIS: Record<EscenariId, Escenari> = {
+  // Palermo Park (Poly Haven): terra i plàtans, llum suau de tarda.
+  parc: {
+    hdr: 'entorn_1k.hdr', pano: 'entorn_4k.jpg', sunInPhoto: new THREE.Vector3(0.578, 0.625, 0.524), rotY: -2.04, photoHeight: 1.7,
+    groundDiffuse: 'terra_diffuse_2k.jpg', ground: [12, 24, 3], sun: 3.6, env: 0.75, exposure: 1.05, lines: 'calc', paint: 'anelles', pebbles: 900,
+  },
+  // Pista de Vilanova i la Geltrú (fotos de referència): sauló clar, cel blau, sol alt i blocs de pisos.
+  // La foto 360° és Wide Street 01 (Poly Haven); l'asfalt queda tapat pel camp i la tanca modelats.
+  vilanova: {
+    hdr: 'vilanova_entorn_1k.hdr', pano: 'vilanova_entorn_4k.jpg', sunInPhoto: new THREE.Vector3(0.477, 0.796, 0.373), rotY: 0, photoHeight: 1.7,
+    groundDiffuse: 'saulo_clar_diffuse_2k.jpg', ground: [30, 44, 4], sun: 3.4, env: 0.85, exposure: 0.95, lines: 'cordill', paint: 'cap', pebbles: 500,
+  },
+};
 
 function loadTex(loader: THREE.TextureLoader, file: string, srgb: boolean, repeat = 1) {
   return loader.loadAsync(BASE + file).then((t) => {
@@ -80,6 +113,32 @@ function chalkAlpha(): THREE.Texture {
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
+}
+
+/** Pista de Vilanova: cordill fosc als límits i barres blanques estirades a les distàncies de tir. */
+function laneCordill(d: number): THREE.Object3D[] {
+  const out: THREE.Object3D[] = [];
+  const string = new THREE.MeshStandardMaterial({ color: 0x3b3a36, roughness: 0.9 });
+  const mk = (w: number, l: number, x: number, z: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.004, l), string);
+    m.position.set(x, 0.002, z);
+    m.receiveShadow = true;
+    return m;
+  };
+  out.push(mk(LANE_WIDTH, 0.006, 0, 0), mk(0.006, 16.5, -LANE_WIDTH / 2, 16.5 / 2 - 3), mk(0.006, 16.5, LANE_WIDTH / 2, 16.5 / 2 - 3));
+  const bar = new THREE.MeshStandardMaterial({ color: 0xf4f2ec, roughness: 0.7 });
+  const barGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.5, 12);
+  barGeo.rotateZ(Math.PI / 2);
+  // Una barra a cada límit per a cada distància de categoria; la de la distància actual, al mig de la pista.
+  for (const z of [6.5, 8, 9.5, 11.5]) for (const x of [-LANE_WIDTH / 2, LANE_WIDTH / 2]) {
+    const b = new THREE.Mesh(barGeo, bar);
+    b.position.set(x, 0.025, z);
+    b.rotation.y = (Math.random() - 0.5) * 0.2;
+    b.castShadow = b.receiveShadow = true;
+    out.push(b);
+  }
+  out.push(mk(LANE_WIDTH, 0.006, 0, d));
+  return out;
 }
 
 /** Alfa radial perquè el terra texturat es fongui amb el terra de la foto. */
@@ -182,15 +241,17 @@ class CameraPost implements PostFX {
 }
 
 /** Aplica l'estètica realista a una escena ja creada. Torna quan tot està carregat. */
-export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): Promise<void> {
+export async function applyRealisme(gs: GameScene, quality: Quality = 'alta', escenari: EscenariId = 'vilanova'): Promise<void> {
   const { renderer, scene } = gs;
+  const E = ESCENARIS[escenari];
+  const ROT_Y = E.rotY, PHOTO_HEIGHT = E.photoHeight, SUN_IN_PHOTO = E.sunInPhoto;
   const tl = new THREE.TextureLoader();
   const pmrem = new THREE.PMREMGenerator(renderer);
 
   const [hdr, pano, tD, tN, tA, wD, wN, wA, fD, fN, fA] = await Promise.all([
-    new RGBELoader().loadAsync(BASE + 'entorn_1k.hdr'),
-    loadTex(tl, 'entorn_4k.jpg', true),
-    loadTex(tl, 'terra_diffuse_2k.jpg', true, 6),
+    new RGBELoader().loadAsync(BASE + E.hdr),
+    loadTex(tl, E.pano, true),
+    loadTex(tl, E.groundDiffuse, true, 6),
     loadTex(tl, 'terra_nor_2k.jpg', false, 6),
     loadTex(tl, 'terra_arm_2k.jpg', false, 6),
     loadTex(tl, 'fusta_diffuse_1k.jpg', true),
@@ -203,11 +264,11 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
 
   // ---- Llum: la foto il·lumina l'escena; el sol directe fa les ombres ----
   renderer.toneMapping = THREE.AgXToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = E.exposure;
   hdr.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = pmrem.fromEquirectangular(hdr).texture;
   scene.environmentRotation.set(0, ROT_Y, 0);
-  scene.environmentIntensity = 0.75;
+  scene.environmentIntensity = E.env;
   hdr.dispose();
   pmrem.dispose();
   gs.hemi.intensity = 0;
@@ -215,7 +276,7 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
   gs.sun.position.copy(sunDir.multiplyScalar(14)).add(new THREE.Vector3(0, 0, 2));
   gs.sun.target.position.set(0, 0, 2);
   gs.sun.color.set(0xfff0d8);
-  gs.sun.intensity = 3.6;
+  gs.sun.intensity = E.sun;
   gs.sun.shadow.mapSize.set(quality === 'alta' ? 4096 : 1024, quality === 'alta' ? 4096 : 1024);
   Object.assign(gs.sun.shadow.camera, { left: -4, right: 4, top: 8, bottom: -8, near: 1, far: 40 });
   gs.sun.shadow.camera.updateProjectionMatrix();
@@ -237,15 +298,17 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
     normalScale: new THREE.Vector2(0.8, 0.8), alphaMap: fadeAlpha(), transparent: true, depthWrite: true,
   });
   // Les textures del terra es repeteixen cada 2 m; l'alfa (sense repetició) fon les vores amb la foto.
-  for (const t of [tD, tN, tA]) t.repeat.set(6, 12);
+  const [gw, gl, gz] = E.ground;
+  for (const t of [tD, tN, tA]) t.repeat.set(gw / 2, gl / 2);
   gs.ground.geometry.dispose();
-  gs.ground.geometry = new THREE.PlaneGeometry(12, 24);
-  gs.ground.position.set(0, 0.001, 3);
+  gs.ground.geometry = new THREE.PlaneGeometry(gw, gl);
+  gs.ground.position.set(0, 0.001, gz);
   gs.ground.material = groundMat;
 
   // ---- Pista: línies de calç ----
   const chalk = chalkAlpha();
-  gs.laneFor = (d) => {
+  if (E.lines === 'cordill') gs.laneFor = (d) => laneCordill(d);
+  else gs.laneFor = (d) => {
     const mk = (w: number, l: number, x: number, z: number, along: boolean) => {
       const a = chalk.clone();
       a.repeat.set(1, along ? l / 2 : 1);
@@ -280,12 +343,22 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
   const lathe = (p: [number, number][], seg: number) => new THREE.LatheGeometry(p.map(([r, y]) => new THREE.Vector2(r, y)), seg);
   gs.pinGeo = lathe(pinProfileDetall(), 40);
   gs.clubGeo = lathe(clubProfileDetall(), 32);
-  // Anelles pintades al coll, com molts jocs reals: vermella i groga.
   const paint = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
+  // Cap pintat (Vilanova): la part de dalt de la bitlla, de l'espatlla al cap, amb una capa de pintura.
+  const headPts = pinProfileDetall().filter(([, y]) => y >= 0.37 && y < 0.51).map(([r, y]) => [r + 0.0007, y] as [number, number]);
+  const headGeo = lathe([[0, 0.37], ...headPts, [0, 0.5107]], 40);
+  const headPaint = paint(0xf2b705);
+  // Anelles pintades al coll, com molts jocs reals: vermella i groga.
   const red = paint(0xb8322a), yellow = paint(0xe0b23a);
   const band = (y0: number, y1: number) => lathe([[0, y0], [0.0212, y0], [0.0212, y1], [0, y1]].map(([r, y]) => [r + (y > 0.4 ? 0 : 0.0006), y]) as [number, number][], 32);
   const bandRed = band(0.392, 0.402), bandYellow = band(0.404, 0.409);
   gs.decoratePin = (g) => {
+    if (E.paint === 'cap') {
+      const h = new THREE.Mesh(headGeo, headPaint);
+      h.castShadow = true;
+      g.add(h);
+      return;
+    }
     const a = new THREE.Mesh(bandRed, red), b = new THREE.Mesh(bandYellow, yellow);
     a.castShadow = b.castShadow = true;
     g.add(a, b);
@@ -300,7 +373,7 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
 
   // ---- Còdols ----
   const pebbleGeo = new THREE.DodecahedronGeometry(1, 0);
-  const pebbles = new THREE.InstancedMesh(pebbleGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), quality === 'alta' ? 900 : 300);
+  const pebbles = new THREE.InstancedMesh(pebbleGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), quality === 'alta' ? E.pebbles : Math.round(E.pebbles / 3));
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), col = new THREE.Color();
   const palette = [0x9a8f84, 0x7d7268, 0xb5aa9c, 0x6b5f55, 0xc4b8a8];
   for (let i = 0; i < pebbles.count; i++) {
@@ -369,6 +442,12 @@ export async function applyRealisme(gs: GameScene, quality: Quality = 'alta'): P
       if (p.age > 1.6) { scene.remove(p.pts); p.pts.geometry.dispose(); mat.dispose(); puffs.splice(k, 1); }
     }
   });
+
+  // ---- Entorn modelat de l'escenari ----
+  if (escenari === 'vilanova') {
+    const { buildVilanova } = await import('./escenari-vilanova');
+    buildVilanova(scene, { pinGeo: gs.pinGeo, pinMat: pinMats[2], ringMat: gs.ringMat, paint, lathe, headGeo, quality });
+  }
 
   // ---- Postprocessat de càmera ----
   if (quality === 'alta') {

@@ -471,7 +471,8 @@ async function boot() {
   if ((params0.get('estil') ?? 'realisme') === 'realisme') {
     $('loading').textContent = 'Carregant la plaça…';
     const { applyRealisme } = await import('./game/look-realisme');
-    await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta');
+    const escenari = params0.get('escenari') === 'parc' ? 'parc' : 'vilanova';
+    await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta', escenari);
   }
   if (params0.has('fps')) startFps();
   const resize = () => scene.resize(stage.clientWidth, stage.clientHeight);
@@ -484,6 +485,6 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.has('tutorial')) startTutorial(Number(params.get('tutorial')) || 0);
   else menu();
-  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe };
+  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe, scene: () => scene };
 }
 void boot();

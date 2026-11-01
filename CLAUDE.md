@@ -20,6 +20,8 @@ src/game/physics.ts    Rapier. Sense three.js ni DOM: es testeja a Node. `launch
 src/game/input.ts      Gest (pantalla) → ThrowInput {aim, power, spin}. Funció pura `gestureToInput`.
 src/game/scene.ts      Render three.js (gris per defecte). Només llegeix estats; mai decideix regles. Exposa ganxos per a l'estètica.
 src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdols, pols, ombres de contacte, profunditat de camp.
+                       Escenaris a `ESCENARIS` (foto 360°, sol, terra, línies, pintura).
+src/game/escenari-vilanova.ts  Decorat modelat de la pista de Vilanova (tanca, fanals, pèrgola, pistes veïnes).
 public/realisme/       Recursos CC0 (Poly Haven). Vegeu LLICENCIES.md abans d'afegir-ne.
 docs/referencies/      Fotos reals (Wikimedia Commons) amb autoria i llicència. Consulta-les abans de tocar formes o materials. No s'empaqueten.
 src/game/tutorial.ts   Lliçons (dades + funció `check`).
@@ -32,7 +34,7 @@ Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene
 
 Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia geometria visual (`pinGeo`, `clubGeo`, `decoratePin`), materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). Es carrega amb `import()` dinàmic a `main.ts` perquè el gris no pagui el pes. Mai toquis regles ni física des d'una estètica.
 
-Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
+Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?escenari=vilanova|parc` (per defecte vilanova), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
 
 ## Reglament (resum, FCBB 2010)
 
@@ -50,6 +52,6 @@ Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllot
 - Textos de la interfície en català. Comentaris en català.
 - Qualsevol canvi de física o del gest: `npm test` + `npm run sim`, i comprova que les bitlles plantades no cauen soles (test).
 - Qualsevol canvi visual o de flux: `npm run e2e` i mira les captures.
-- `window.__bitlla` exposa l'estat per a proves.
+- `window.__bitlla` exposa l'estat i l'escena (`scene()`) per a proves; amb la targeta del menú oberta pots moure la càmera per fer vistes generals.
 - Recursos visuals: llicència CC0 o pròpia, documentats a `public/realisme/LLICENCIES.md`. Pressupost actual del realisme: ~7,5 MB. Comprimeix (JPG/KTX2) abans d'afegir-ne.
 - El rendiment real només es pot mesurar en mòbils: el contenidor fa servir render per programari.
