@@ -1,5 +1,6 @@
 import './style.css';
-import { Field, initPhysics, launchFromInput, STEP, type ThrowInput } from './game/physics';
+import { bitllesEnCami, Field, initPhysics, launchFromInput, prediuTrajectoria, STEP, zonaDeCaiguda, type ThrowInput } from './game/physics';
+import { GestFx } from './game/gest-fx';
 import { GameScene } from './game/scene';
 import { SwipeInput } from './game/input';
 import { cheer, knock, unlockAudio, vibrate } from './game/feedback';
@@ -12,7 +13,7 @@ import {
   ALL_BITLLOTS, BITLLOTS, newPartida, partidaScore, planFromSeed, pushResult, rondaOf, scoreTirada, shareText, tiradaOver,
   TOTAL_TIRADES, type BitllotKind, type DailyPlan, type Partida, type TiradaResult,
 } from './game/rules';
-import { THROW_DISTANCE, TIRADES_PER_RONDA } from './game/constants';
+import { PIN_LAYOUT, THROW_DISTANCE, TIRADES_PER_RONDA } from './game/constants';
 
 // ---------- DOM ----------
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -36,6 +37,9 @@ type Phase = 'menu' | 'card' | 'aim' | 'flight' | 'result' | 'end';
 let scene: GameScene;
 let field: Field;
 const swipe = new SwipeInput(stage);
+const fx = new GestFx($<HTMLCanvasElement>('fx'));
+/** Feedback del gest: última previsió (es deixa atenuada durant el vol) i esglaó de força (per a la vibració). */
+const gest = { pred: null as ReturnType<typeof prediuTrajectoria> | null, toca: [] as boolean[], esglao: -1, zona: '' as string };
 
 const S = {
   mode: 'partida' as Mode,
@@ -80,6 +84,9 @@ function button(b: Btn) {
 function card(html: string, buttons: Btn[], variant: Variant = 'paper') {
   S.phase = S.phase === 'end' ? 'end' : 'card';
   swipe.enabled = false;
+  scene?.showHand(null);
+  scene?.showGuide(null);
+  fx.clear();
   const cls = variant === 'board' ? 'card board' : `card paper ${variant}`;
   overlay.innerHTML = `<div class="${cls}">${html}${buttons.length ? '<div class="actions"></div>' : ''}</div>`;
   const actions = overlay.querySelector('.actions');
@@ -523,8 +530,11 @@ function toAim() {
   const m = S.mode === 'tutorial' ? 1 : S.partida.nextMultiplier;
   hud.mult.hidden = m <= 1;
   hud.mult.textContent = `×${m}`;
+  scene.showGuide(null);
+  gest.pred = null;
   renderRack();
   renderPins();
+  maIdle();
 }
 
 function renderRack() {
@@ -536,7 +546,7 @@ function renderRack() {
     el.innerHTML = `${clubIcon(k, 52)}<span>${b.name}</span>`;
     el.setAttribute('aria-label', `Bitllot ${b.name}${S.used.includes(i) ? ', ja llançat' : ''}`);
     el.disabled = S.used.includes(i) || S.phase !== 'aim';
-    el.addEventListener('click', (e) => { e.stopPropagation(); S.selected = i; renderRack(); });
+    el.addEventListener('click', (e) => { e.stopPropagation(); S.selected = i; renderRack(); maIdle(); });
     el.addEventListener('pointerdown', (e) => e.stopPropagation());
     hud.rack.appendChild(el);
   });
@@ -547,19 +557,45 @@ function renderPins() {
   hud.pins.innerHTML = down.map((d, i) => `<i class="${d ? 'down' : ''} ${i === S.pubilla ? 'pub' : ''}"></i>`).join('');
 }
 
-swipe.onMove = (g) => {
+/** Franja de força que fa caure el bitllot just davant de les bitlles, per a la punteria i l'efecte actuals. */
+function franjaBona(g: ThrowInput, spec: (typeof BITLLOTS)[BitllotKind]): [number, number] | null {
+  let lo = -1, hi = -1;
+  for (let k = 0; k <= 40; k++) {
+    const p = k / 40;
+    if (zonaDeCaiguda(launchFromInput({ ...g, power: p }, field.distance, spec).landing.z) === 'be') { if (lo < 0) lo = p; hi = p; }
+  }
+  return lo < 0 ? null : [lo, hi];
+}
+
+function maIdle() {
+  const spec = BITLLOTS[S.hand[S.selected]];
+  if (spec) scene.showHand({ nx: 0, ny: -0.5, aim: 0, spin: 0, power: 0, color: spec.color });
+}
+
+swipe.onMove = (g, path) => {
   if (S.phase !== 'aim') return;
   const spec = BITLLOTS[S.hand[S.selected]];
-  const l = launchFromInput(g, field.distance, spec);
-  scene.showAim(g.valid ? l.landing : null, l.position);
   hud.hint.hidden = true;
+  hud.readout.hidden = true;
   S.ghost = null;
   hud.ghost.hidden = true;
-  hud.readout.hidden = !g.valid;
-  const eff = g.spin === 0 ? 'sense efecte' : g.spin > 0 ? 'efecte ←' : 'efecte →';
-  hud.readout.textContent = `força ${Math.round(g.power * 100)}% · ${eff}`;
+  const last = path[path.length - 1];
+  const w = stage.clientWidth, h = stage.clientHeight;
+  scene.showHand({ nx: (last.x / w) * 2 - 1, ny: -(last.y / h) * 2 + 1, aim: g.aim, spin: g.spin, power: g.power, color: spec.color });
+  if (!g.valid) { scene.showGuide(null); fx.update(path, 'curt', 0, g.power, null); return; }
+  const pred = prediuTrajectoria(g, field.distance, spec);
+  const down = field.down();
+  const toca = bitllesEnCami(pred, PIN_LAYOUT).map((t, k) => t && !down[k]);
+  gest.pred = pred; gest.toca = toca;
+  scene.showGuide({ vol: pred.vol, terra: pred.terra, zona: pred.zona, toca });
+  fx.update(path, pred.zona, g.spin, g.power, franjaBona(g, spec));
+  // Vibració suau a cada esglaó de força i una mica més forta en entrar a la zona bona.
+  const esglao = Math.floor(g.power * 10);
+  if (esglao !== gest.esglao) { if (gest.esglao >= 0) vibrate(4); gest.esglao = esglao; }
+  if (pred.zona === 'be' && gest.zona !== 'be') vibrate(16);
+  gest.zona = pred.zona;
 };
-swipe.onCancel = () => { scene.showAim(null); hud.readout.hidden = true; };
+swipe.onCancel = () => { scene.showGuide(null); fx.clear(); gest.esglao = -1; gest.zona = ''; hud.readout.hidden = true; if (S.phase === 'aim') { maIdle(); hud.hint.hidden = false; } };
 swipe.onRelease = (input) => {
   if (S.phase !== 'aim') return;
   unlockAudio();
@@ -572,7 +608,11 @@ swipe.onRelease = (input) => {
   S.slowBudget = 1.6;
   S.clubWasAir = true;
   swipe.enabled = false;
-  scene.showAim(null);
+  // La guia queda atenuada durant el vol per comparar-la amb la traça real.
+  if (gest.pred) scene.showGuide({ vol: gest.pred.vol, terra: gest.pred.terra, zona: gest.pred.zona, toca: gest.toca }, true);
+  scene.showHand(null);
+  fx.release();
+  gest.esglao = -1; gest.zona = '';
   hud.readout.hidden = true;
   hud.hint.hidden = true;
   renderRack();
@@ -658,6 +698,7 @@ function frame(now: number) {
     hud.ghost.style.opacity = String(g.o);
   } else hud.ghost.hidden = true;
 
+  fx.draw(dt);
   scene.render(dt);
   requestAnimationFrame(frame);
 }
@@ -693,7 +734,7 @@ async function boot() {
   const escenari = params0.get('escenari') === 'parc' ? 'parc' : 'vilanova';
   await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta', escenari);
   if (params0.has('fps')) startFps();
-  const resize = () => scene.resize(stage.clientWidth, stage.clientHeight);
+  const resize = () => { scene.resize(stage.clientWidth, stage.clientHeight); fx.resize(stage.clientWidth, stage.clientHeight); };
   addEventListener('resize', resize);
   resize();
   plant(distanceFor(), [true, true, true, true, true, true], 0);

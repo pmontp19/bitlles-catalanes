@@ -59,6 +59,47 @@ export function launchFromInput(input: ThrowInput, distance: number, spec: Pick<
   };
 }
 
+/** Zona on cau el bitllot: massa curt, bé (cau just davant i entra a la plantada) o massa llarg. */
+export type Zona = 'curt' | 'be' | 'llarg';
+export function zonaDeCaiguda(landingZ: number): Zona {
+  if (landingZ > 2.2) return 'curt';
+  if (landingZ < -0.35) return 'llarg';
+  return 'be';
+}
+
+/**
+ * Trajectòria prevista del vol (amb l'efecte, sense vent) i continuació aproximada per terra.
+ * Serveix per dibuixar la guia i saber quines bitlles tocaria. No substitueix la física.
+ */
+export function prediuTrajectoria(input: ThrowInput, distance: number, spec: Pick<BitllotSpec, 'aimScale' | 'spinScale'>) {
+  const l = launchFromInput(input, distance, spec);
+  const p = { ...l.position };
+  const v = { ...l.velocity };
+  const vol: { x: number; y: number; z: number }[] = [{ ...p }];
+  const dt = 1 / 60;
+  for (let i = 0; i < 240 && p.y > 0; i++) {
+    v.x += l.curveAccel * dt;
+    v.y += GRAVITY * dt;
+    p.x += v.x * dt; p.y += v.y * dt; p.z += v.z * dt;
+    vol.push({ x: p.x, y: Math.max(0, p.y), z: p.z });
+  }
+  // Per terra: segueix la direcció horitzontal amb una lliscada que depèn de la velocitat.
+  const h = Math.hypot(v.x, v.z) || 1;
+  const lliscada = Math.min(3.5, 0.18 * h * h);
+  const terra = { x: p.x + (v.x / h) * lliscada, y: 0, z: p.z + (v.z / h) * lliscada };
+  return { vol, caiguda: { x: p.x, z: p.z }, terra, zona: zonaDeCaiguda(p.z) };
+}
+
+/** Bitlles que la trajectòria prevista (des de la caiguda fins al final de la lliscada) passa a prop. */
+export function bitllesEnCami(pred: ReturnType<typeof prediuTrajectoria>, pins: ReadonlyArray<readonly [number, number]>, radi = 0.16): boolean[] {
+  const a = pred.caiguda, b = pred.terra;
+  const dx = b.x - a.x, dz = b.z - a.z, len2 = dx * dx + dz * dz || 1;
+  return pins.map(([x, z]) => {
+    const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / len2));
+    return Math.hypot(a.x + t * dx - x, a.z + t * dz - z) < radi;
+  });
+}
+
 export class Field {
   readonly world: RAPIER.World;
   readonly pins: (RAPIER.RigidBody | null)[] = [];

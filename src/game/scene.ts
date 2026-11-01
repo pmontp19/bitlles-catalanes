@@ -21,6 +21,11 @@ export const COLORS = {
 };
 
 const TRAIL_MAX = 90;
+const GUIDE_DOTS = 44;
+/** Colors de la guia segons on cau el bitllot. */
+export const ZONA_COLOR = { curt: 0x7fb2ff, be: 0x3ecf6e, llarg: 0xff6a4a } as const;
+export type Zona = keyof typeof ZONA_COLOR;
+type P3 = { x: number; y: number; z: number };
 
 export type CameraMode = 'aim' | 'follow' | 'pins';
 
@@ -69,6 +74,15 @@ export class GameScene {
   private arc: THREE.Line;
   private trail: THREE.Line;
   private trailPts: THREE.Vector3[] = [];
+  // Guia de llançament: punts del vol (com Angry Birds), punts a terra, anelles a les bitlles que tocaria.
+  private guide: THREE.InstancedMesh;
+  private guideMat = new THREE.MeshBasicMaterial({ color: ZONA_COLOR.be, transparent: true, opacity: 0.95, depthWrite: false });
+  private pinRings: THREE.Mesh[] = [];
+  // Bitllot a la mà: escena superposada (sense profunditat de camp) que segueix el dit.
+  private overlay = new THREE.Scene();
+  private hand: THREE.Mesh;
+  private handOn = false;
+  private handSpin = 0;
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   distance = 9.5;
@@ -117,6 +131,25 @@ export class GameScene {
     this.trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
     this.trail.frustumCulled = false;
     this.scene.add(this.landing, this.arc, this.trail);
+
+    this.guide = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), this.guideMat, GUIDE_DOTS);
+    this.guide.frustumCulled = false;
+    this.guide.count = 0;
+    this.guide.renderOrder = 2;
+    this.scene.add(this.guide);
+    for (let i = 0; i < 6; i++) {
+      const r = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.095, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false }));
+      r.rotation.x = -Math.PI / 2;
+      r.visible = false;
+      this.scene.add(r);
+      this.pinRings.push(r);
+    }
+    this.hand = new THREE.Mesh(this.clubGeo, new THREE.MeshStandardMaterial({ color: 0xc99a62, roughness: 0.6 }));
+    this.hand.visible = false;
+    this.overlay.add(this.hand, new THREE.HemisphereLight(0xffffff, 0x8a7a66, 1.6));
+    const key = new THREE.DirectionalLight(0xfff2dd, 2.2);
+    key.position.set(-1, 2, 1);
+    this.overlay.add(key);
     this.setDistance(this.distance);
   }
 
@@ -219,6 +252,59 @@ export class GameScene {
     }
   }
 
+  /**
+   * Guia del gest: punts al llarg del vol previst (amb l'efecte), punts a terra fins on lliscaria,
+   * color segons la zona de caiguda i anelles a les bitlles que tocaria. `fade` l'atenua (després de llançar).
+   */
+  showGuide(g: { vol: P3[]; terra: P3; zona: Zona; toca: boolean[] } | null, fade = false) {
+    if (!g) { this.guide.count = 0; this.pinRings.forEach((r) => (r.visible = false)); this.landing.visible = false; this.arc.visible = false; return; }
+    this.arc.visible = false;
+    const m = new THREE.Matrix4();
+    const pts: P3[] = [];
+    const step = Math.max(1, Math.floor(g.vol.length / 30));
+    // Només la baixada (l'últim 45% del vol): la pujada surt per dalt de la pantalla i tapa les bitlles.
+    const inici = Math.floor(g.vol.length * 0.55);
+    for (let i = inici; i < g.vol.length; i += step) pts.push(g.vol[i]);
+    const last = g.vol[g.vol.length - 1];
+    for (let k = 1; k <= 8; k++) pts.push({ x: last.x + ((g.terra.x - last.x) * k) / 8, y: 0.02, z: last.z + ((g.terra.z - last.z) * k) / 8 });
+    const n = Math.min(GUIDE_DOTS, pts.length);
+    for (let i = 0; i < n; i++) {
+      const p = pts[i];
+      const r = (p.y <= 0.03 ? 0.02 : 0.024) * (1 - (i / n) * 0.3);
+      m.makeScale(r, p.y <= 0.03 ? r * 0.4 : r, r).setPosition(p.x, Math.max(0.012, p.y), p.z);
+      this.guide.setMatrixAt(i, m);
+    }
+    this.guide.count = n;
+    this.guide.instanceMatrix.needsUpdate = true;
+    this.guideMat.color.setHex(ZONA_COLOR[g.zona]);
+    this.guideMat.opacity = fade ? 0.3 : 0.95;
+    this.landing.visible = !fade;
+    this.landing.position.set(last.x, 0.006, last.z);
+    (this.landing.material as THREE.MeshBasicMaterial).color.setHex(ZONA_COLOR[g.zona]);
+    this.pinRings.forEach((r, i) => {
+      const pin = this.pinMeshes[i];
+      r.visible = !fade && !!g.toca[i] && !!pin?.visible;
+      if (pin) r.position.set(pin.position.x, 0.007, pin.position.z);
+    });
+  }
+
+  /** Bitllot a la mà: segueix el dit (coordenades de pantalla normalitzades -1..1), s'inclina amb la punteria i gira amb l'efecte. */
+  showHand(h: { nx: number; ny: number; aim: number; spin: number; power: number; color: number } | null) {
+    this.handOn = !!h;
+    this.hand.visible = !!h;
+    if (!h) return;
+    (this.hand.material as THREE.MeshStandardMaterial).color.setHex(h.color);
+    // Distància perquè el bitllot (28 cm) ocupi ~20% de l'alçada de pantalla, sigui quin sigui el camp de visió.
+    const dist = 0.28 / (0.2 * 2 * Math.tan((this.camera.fov * Math.PI) / 360));
+    const v = new THREE.Vector3(h.nx, h.ny, 0.5).unproject(this.camera).sub(this.camera.position).normalize();
+    this.hand.position.copy(this.camera.position).addScaledVector(v, dist);
+    this.handSpin += h.spin * 0.35;
+    // Agafat pel mànec (a baix, sota el dit) amb la part ampla amunt; s'inclina amb la punteria i es tira enrere amb la força.
+    const local = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI + 0.25 + h.power * 0.45, this.handSpin, h.aim * 0.6, 'XZY'));
+    this.hand.quaternion.copy(this.camera.quaternion).multiply(local);
+    this.hand.scale.setScalar(1 + h.power * 0.15);
+  }
+
   /** Previsió del gest: anella on cau el bitllot i arc discontinu. */
   showAim(landing: { x: number; z: number } | null, from?: { x: number; y: number; z: number }) {
     this.landing.visible = !!landing;
@@ -271,5 +357,15 @@ export class GameScene {
       const focus = this.camera.position.distanceTo(new THREE.Vector3(0, 0.25, -0.08));
       this.post.render(this.renderer, this.scene, this.camera, focus, this.mode);
     } else this.renderer.render(this.scene, this.camera);
+    if (this.handOn) {
+      // El bitllot a la mà es dibuixa a sobre, nítid, amb la mateixa llum d'entorn.
+      this.overlay.environment = this.scene.environment;
+      this.hand.geometry = this.clubGeo;
+      const auto = this.renderer.autoClear;
+      this.renderer.autoClear = false;
+      this.renderer.clearDepth();
+      this.renderer.render(this.overlay, this.camera);
+      this.renderer.autoClear = auto;
+    }
   }
 }

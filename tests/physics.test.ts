@@ -46,3 +46,31 @@ describe('física', () => {
     expect(down).toEqual([true, false, true, false, false, false]);
   });
 });
+
+import { bitllesEnCami, prediuTrajectoria, zonaDeCaiguda } from '../src/game/physics';
+import { PIN_LAYOUT } from '../src/game/constants';
+
+describe('previsió de la trajectòria', () => {
+  it('sense efecte, cau on diu launchFromInput', () => {
+    const input = { aim: 0.2, power: 0.7, spin: 0 };
+    const p = prediuTrajectoria(input, D, BITLLOTS.cinta);
+    const l = launchFromInput(input, D, BITLLOTS.cinta);
+    expect(Math.abs(p.caiguda.x - l.landing.x)).toBeLessThan(0.08);
+    expect(Math.abs(p.caiguda.z - l.landing.z)).toBeLessThan(0.15);
+  });
+  it('l\'efecte corba cap al costat contrari del signe', () => {
+    const recte = prediuTrajectoria({ aim: 0, power: 0.7, spin: 0 }, D, BITLLOTS.torcat);
+    const corba = prediuTrajectoria({ aim: 0, power: 0.7, spin: 1 }, D, BITLLOTS.torcat);
+    expect(corba.caiguda.x).toBeLessThan(recte.caiguda.x - 0.2);
+  });
+  it('zones de caiguda', () => {
+    expect(zonaDeCaiguda(4)).toBe('curt');
+    expect(zonaDeCaiguda(1)).toBe('be');
+    expect(zonaDeCaiguda(-1)).toBe('llarg');
+  });
+  it('un llançament centrat passa per les bitlles del mig', () => {
+    const cami = bitllesEnCami(prediuTrajectoria({ aim: 0, power: 0.7, spin: 0 }, D, BITLLOTS.cinta), PIN_LAYOUT);
+    expect(cami[1]).toBe(true);
+    expect(cami[4]).toBe(true);
+  });
+});

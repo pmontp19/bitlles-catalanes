@@ -16,8 +16,9 @@ Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat. Estètica ún
 ```
 src/game/constants.ts  Mides i regles del reglament FCBB. Font de veritat.
 src/game/rules.ts      Regles pures: puntuació, tirada, partida, pubilla, bitllots, llavor diària. Sense física ni DOM.
-src/game/physics.ts    Rapier. Sense three.js ni DOM: es testeja a Node. `launchFromInput` mapeja gest → velocitats.
+src/game/physics.ts    Rapier. Sense three.js ni DOM: es testeja a Node. `launchFromInput` mapeja gest → velocitats; `prediuTrajectoria`/`bitllesEnCami`/`zonaDeCaiguda` alimenten la guia.
 src/game/input.ts      Gest (pantalla) → ThrowInput {aim, power, spin}. Funció pura `gestureToInput`.
+src/game/gest-fx.ts    Feedback del gest en una capa 2D: traç del dit pel color de la zona (curt/bé/llarg), indicador de força amb la franja bona, fletxa d'efecte.
 src/game/scene.ts      Render three.js de base (materials simples). Només llegeix estats; mai decideix regles. Exposa ganxos que el realisme omple.
 src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdols, pols, ombres de contacte, profunditat de camp.
                        Escenaris a `ESCENARIS` (foto 360°, sol, terra, línies, pintura).
@@ -65,6 +66,10 @@ Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllot
 ## Interfície
 
 El HUD de joc (marcador, bitlles, bastidor, objectiu, resultat, transportador) és net i pla, sense materials. L'esqueumorfisme és per a la resta: cada targeta és un material (`card(html, botons, variant)`): `board` (rètol de fusta, menú), `note` (nota clavada, lliçons), `book` (llibret), `acta` (full de partida), `paper`. Botons: `.btn` (placa de fusta), `.btn.primary` (placa esmaltada verda), `.btn.flat` (enllaç). Resultats amb `.stamp` (segell de tinta). Textures només amb CSS/SVG; res d'imatges.
+
+## Feedback del gest
+
+Mentre arrossegues: bitllot a la mà (escena superposada sense profunditat de camp, mida fixa a pantalla), guia de punts amb la baixada del vol i la lliscada (amb l'efecte, sense el vent), anelles a les bitlles que tocaria, traç i indicador de força (`gest-fx.ts`) i vibració per esglaons. En llançar, la guia queda atenuada per comparar-la amb la traça real. La guia és orientativa: la física mana.
 
 ## Plantada del dia
 

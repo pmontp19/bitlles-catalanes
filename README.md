@@ -16,6 +16,8 @@ Arrossega el dit cap amunt des de la part de baix de la pantalla i deixa anar:
 
 Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 
+Mentre arrossegues, el bitllot que tens a la mà segueix el dit, s'inclina amb la punteria i gira amb l'efecte. El traç del dit i la guia canvien de color segons on caurà (blau: curt; verd: bé; vermell: llarg). Al costat del dit, un indicador de força marca en verd la franja bona, i les bitlles que tocaries queden encerclades. A Android, el mòbil vibra a cada esglaó de força.
+
 ### Regles (Reglament FCBB, 2010)
 
 - Sis bitlles en dues fileres de tres. Cada tirada són tres bitllots.
