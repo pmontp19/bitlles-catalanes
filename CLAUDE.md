@@ -9,7 +9,7 @@ Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat; l'estètica e
 - `npm run build`: compila a `dist/`.
 - `npm run sim`: ajust de dificultat per Monte Carlo (`N=40 CAT=masculina npm run sim`). Fes-lo servir abans i després de tocar física o el mapa del gest, i posa els números al missatge del commit.
 - `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Al contenidor el render és per programari i va lent: `E2E_QUERY='&estil=gris'` o `'&q=baixa'` per accelerar-lo.
-- `npm run cf:dev` / `npm run deploy`: Worker de Cloudflare (Static Assets + `/api/daily`).
+- `npm run cf:dev` / `npm run deploy`: Worker de Cloudflare (Static Assets + API de la plantada del dia). **Per desplegar, segueix [DEPLOY.md](DEPLOY.md)** (cal crear la D1 i posar-ne el `database_id` a `wrangler.jsonc`).
 
 ## Arquitectura
 

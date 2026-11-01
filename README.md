@@ -118,6 +118,8 @@ El Worker (`src/worker/index.ts`) serveix `dist/` amb Static Assets i l'API de l
 | `POST /api/daily/score` | Envia una partida. El servidor la **recalcula** a partir de les tirades (bitlles tombades i bitllots llançats) amb la pubilla real del dia; només compta el primer intent de cada jugador |
 | `GET /api/daily/ranking` | Els 20 millors del dia i la posició del jugador |
 
+Guia pas a pas, amb comprovacions: [DEPLOY.md](DEPLOY.md).
+
 El rànquing es guarda a **Cloudflare D1**. Cal crear la base de dades una vegada:
 
 ```sh
