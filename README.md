@@ -2,31 +2,104 @@
 
 Bitlles catalanes en 3D per al mòbil. Tomba'n cinc i deixa'n una dreta: val 10 punts. Totes sis, només 6.
 
-Prototip jugable en gris (sense estètica final) per validar la mecànica:
+**Estat:** prototip jugable en gris. La mecànica i el tutorial funcionen; l'estètica final encara no està decidida.
 
-- **Llançament amb un dit**: la llargada del gest és la força, la inclinació és la punteria i la corba és l'efecte. Una anella mostra on caurà el bitllot.
-- **La pubilla**: a cada tirada hi ha una bitlla coronada. Bitlla amb la pubilla dreta = bitlla d'or (×2).
-- **Tria 3 de 4**: a cada ronda deixes un dels quatre bitllots (alzina, boix, amb cinta, torçat) a la banqueta.
-- **Bitllots estalviats**: si fas bitlla aviat, els bitllots que no llances multipliquen la tirada següent.
-- **Regla dels 45°**: càmera lenta i transportador quan una bitlla tentineja al límit.
-- **Tutorial** de 7 lliçons, **partida ràpida** i **plantada del dia** (llavor comuna servida pel Worker).
+## Com es juga
+
+Arrossega el dit cap amunt des de la part de baix de la pantalla i deixa anar:
+
+| Gest | Efecte |
+|---|---|
+| Llargada | Força: on cau el bitllot. Una anella groga mostra el punt de caiguda. |
+| Inclinació | Punteria cap a l'esquerra o la dreta. |
+| Corba | Efecte: el bitllot surt girant i es desvia cap al costat on acaba la corba. |
+
+Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
+
+### Regles (Reglament FCBB, 2010)
+
+- Sis bitlles en dues fileres de tres. Cada tirada són tres bitllots.
+- Puntuació: 5 tombades = **10** (bitlla), 6 tombades = **6** (llenya), la resta val el nombre de bitlles tombades.
+- Una bitlla està tombada quan queda inclinada menys de 45° respecte al terra.
+- Si fas bitlla amb el primer o el segon bitllot, la tirada s'acaba.
+- Una partida són 9 tirades en 3 rondes de 3.
+
+### Mecàniques del joc
+
+- **La pubilla:** a cada tirada hi ha una bitlla coronada. Si fas bitlla i la que queda dreta és ella, és una bitlla d'or i val el doble.
+- **Tria 3 de 4:** a l'inici de cada ronda deixes un dels quatre bitllots a la banqueta.
+
+  | Bitllot | Caràcter |
+  |---|---|
+  | Alzina | Pesat. Arrasa, però costa deixar-ne una. |
+  | Boix | Lleuger i viu. Rebota i va lluny. |
+  | Amb cinta | Més control: la punteria és més fina. |
+  | Torçat | Efecte exagerat. Corba molt. |
+
+- **Bitllots estalviats:** cada bitllot que no llances perquè ja has fet bitlla suma ×0,5 a la tirada següent.
+- **Regla dels 45°:** quan una bitlla tentineja al límit, el temps s'alenteix i apareix un transportador d'angle.
+
+### Modes
+
+- **Tutorial:** set lliçons curtes, de 6,5 m a 8 m (llançar, apuntar, efecte, fer bitlla, pubilla, tria 3 de 4 i la regla dels 45°). El menú el proposa com a primera opció fins que l'acabes o el saltes.
+- **Partida ràpida:** 9 tirades a 9,5 m.
+- **Plantada del dia:** la mateixa pubilla i el mateix vent per a tothom. En acabar es pot copiar el resultat per compartir-lo:
+
+  ```
+  Bitlla! 2026-11-01 · 68 punts
+  🟨🟫🌟
+  🪵🟨⬛
+  🟫🟨🟫
+  ```
 
 ## Desenvolupament
 
+Requereix Node 20 o superior.
+
 ```sh
 npm install
-npm run dev        # http://localhost:5173 (també accessible des del mòbil a la mateixa xarxa)
-npm test
-npm run sim        # distribució de resultats per Monte Carlo
+npm run dev        # http://localhost:5173, també accessible des del mòbil a la mateixa xarxa
+npm test           # regles, gest, física sense navegador i Worker
+npm run typecheck
+npm run sim        # dificultat per Monte Carlo (N=40 CAT=masculina npm run sim)
+npm run e2e        # amb `npx vite preview --port 4173` engegat: tutorial + partida en un mòbil simulat
+```
+
+El codi l'escriuen sobretot agents. Per a l'arquitectura, les convencions i les comprovacions obligatòries després de cada canvi, vegeu [CLAUDE.md](CLAUDE.md).
+
+### Estructura
+
+```
+src/game/constants.ts  Mides del reglament (font de veritat)
+src/game/rules.ts      Regles pures: puntuació, partida, pubilla, bitllots
+src/game/physics.ts    Física amb Rapier, sense render (també corre a Node)
+src/game/input.ts      Gest → força, punteria i efecte
+src/game/scene.ts      Render amb three.js (aquí anirà l'estètica)
+src/game/tutorial.ts   Lliçons del tutorial
+src/game/feedback.ts   So i vibració
+src/main.ts            Flux del joc i HUD
+src/worker/index.ts    Worker de Cloudflare
 ```
 
 ## Desplegament a Cloudflare Workers
+
+El Worker (`src/worker/index.ts`) serveix `dist/` amb Static Assets i respon `GET /api/daily` amb `{ date, seed }` per a la plantada del dia.
+
+**Automàtic des de GitHub:** al tauler de Cloudflare, *Workers & Pages* → *Create* → *Import a repository*, tria aquest repositori i la branca `main`, amb l'ordre de compilació `npm run build` i l'ordre de desplegament `npx wrangler deploy`. Cada canvi a `main` es desplegarà sol.
+
+**Des de terminal:**
 
 ```sh
 npx wrangler login
 npm run deploy
 ```
 
-El Worker (`src/worker/index.ts`) serveix `dist/` amb Static Assets i respon `GET /api/daily` amb `{ date, seed }`.
+## Properes passes
+
+- Decidir l'estètica (propostes A–G: diorama, toon, trencadís, riso, revetlla, còmic XIII, realisme).
+- Ajustar el gest i la dificultat amb jugadors reals.
+- Rànquing de la plantada del dia (D1 o Durable Object).
+- Gira de festes majors: pobles amb modificadors (terra molla, pendent, tramuntana, revetlla).
+- App per a les botigues amb Capacitor (vibració nativa a iPhone, notificacions).
 
 Reglament de referència: [Reglament de Joc de Bitlles Catalanes, FCBB (2010)](https://kitcueme-escoles.diba.cat/documents/41289/2305036/REGLAMENT+DE+JOC+DE+BITLLES+CATALANES.pdf/03c798ae-85aa-43ff-b5e8-6a8685e46d14).
