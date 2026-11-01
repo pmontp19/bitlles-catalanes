@@ -165,73 +165,52 @@ button.bitllot-pick:active { transform: translateY(2px); }
 button.bitllot-pick:focus-visible { outline: 3px solid var(--gold); }
 .bitllot-pick.static { cursor: default; }
 
-/* ---------- HUD ---------- */
-#hud { position: absolute; inset: 0; pointer-events: none; padding: calc(env(safe-area-inset-top, 0px) + 12px) max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px)); }
-.top { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 8px; }
-/* Marcador: pissarra amb marc de fusta. */
-.score { min-width: 74px; padding: 4px 10px 6px; text-align: center; border-radius: 4px; color: var(--chalk);
-  background: var(--tex-slate), radial-gradient(ellipse at 40% 30%, #3c4a43, var(--slate));
-  box-shadow: inset 0 0 0 5px #8a5a2b, inset 0 0 0 6px #4f3114, inset 0 0 14px 6px rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .35); }
-.score b { display: block; padding-top: 6px; font: 700 42px/0.9 var(--hand); font-variant-numeric: tabular-nums; text-shadow: 0 0 1px rgba(255, 255, 255, .6); }
-.score span { font: 600 15px var(--hand); letter-spacing: .06em; opacity: .85; }
+/* ---------- HUD de joc: net, sense materials (l'esqueumorfisme queda per a menús, lliçons, llibret i acta) ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--ui); padding: calc(env(safe-area-inset-top, 0px) + 14px) max(14px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 14px) max(14px, env(safe-area-inset-left, 0px)); --glass: rgba(247, 245, 240, .9); --hud-ink: #1f2523; --hud-muted: #6c7370; }
+.top { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 10px; }
+.score { color: var(--hud-ink); background: var(--glass); padding: 6px 10px 5px; border-radius: 12px; min-width: 58px; text-align: center; }
+.score b { display: block; font-size: 40px; line-height: .9; font-weight: 900; font-variant-numeric: tabular-nums; }
+.score span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--hud-muted); font-weight: 700; }
 .mid { text-align: center; display: grid; gap: 6px; justify-items: center; }
-/* Etiqueta de cartró lligada amb cordill. */
-.tirada { position: relative; padding: 5px 12px 5px 22px; font: 700 14px var(--sign); color: var(--ink); clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
-  background: var(--tex-paper), linear-gradient(180deg, #f1e2c0, #e3cd9f); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .3)); }
-.tirada::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #8a6a3a; box-shadow: inset 0 1px 1px rgba(0, 0, 0, .5); }
+.tirada { font-size: 13px; font-weight: 700; color: var(--hud-ink); background: var(--glass); padding: 4px 10px; border-radius: 99px; }
 .chips { display: flex; gap: 6px; }
-/* Moneda de llautó (multiplicador) i banderola de roba (vent). */
-.chip { font: 700 14px var(--sign); padding: 4px 9px; border-radius: 3px; color: var(--ink); background: var(--tex-paper), #efe4c8; box-shadow: 0 2px 3px rgba(0, 0, 0, .3); }
-.chip.gold { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #5a4100; text-shadow: 0 1px 0 rgba(255, 245, 200, .7);
-  background: radial-gradient(circle at 35% 30%, #fff1b8, var(--gold) 45%, #a87a00); box-shadow: inset 0 0 0 2px rgba(120, 80, 0, .5), inset 0 0 0 4px rgba(255, 230, 140, .6), 0 3px 5px rgba(0, 0, 0, .35); }
-/* Bitlles en miniatura sobre una tauleta. */
-.pins { display: grid; grid-template-columns: repeat(3, 14px); gap: 2px 6px; padding: 6px 8px 5px; border-radius: 5px; justify-items: center; }
-.pins .pin-ico { display: block; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .3)); }
-.pins .pin-ico.down { opacity: .35; transform: rotate(70deg) translate(6px, 4px) scale(.9); }
-.pins > :nth-child(1), .pins > :nth-child(2), .pins > :nth-child(3) { grid-row: 2; }
-.pins > :nth-child(4), .pins > :nth-child(5), .pins > :nth-child(6) { grid-row: 1; }
+.chip { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: var(--hud-ink); color: #f7f5f0; }
+.chip.gold { background: var(--gold); color: var(--hud-ink); }
+.pins { display: grid; grid-template-columns: repeat(3, 10px); gap: 4px 5px; }
+.pins i { width: 10px; height: 22px; border-radius: 5px 5px 3px 3px; background: #f4f1ea; border: 1.5px solid var(--hud-ink); }
+.pins i.down { opacity: .25; background: var(--hud-ink); }
+.pins i.pub { background: var(--gold); }
+.pins i.pub.down { background: var(--danger); opacity: .6; }
+/* La filera del darrere (3,4,5) es dibuixa a dalt, com es veu des del tirador. */
+.pins i:nth-child(1), .pins i:nth-child(2), .pins i:nth-child(3) { grid-row: 2; }
+.pins i:nth-child(4), .pins i:nth-child(5), .pins i:nth-child(6) { grid-row: 1; }
 
-/* Objectiu: tira de paper enganxada amb cinta. */
-.goal { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 96px); left: 50%; transform: translateX(-50%) rotate(-1deg); max-width: calc(100% - 40px); padding: 8px 16px 6px; text-align: center; font: 700 22px/1.1 var(--hand); color: var(--ink);
-  background: var(--tex-paper), #fbf3df; box-shadow: 0 3px 6px rgba(0, 0, 0, .3); }
-.goal::before, .goal::after { content: ''; position: absolute; top: -8px; width: 46px; height: 18px; background: rgba(236, 222, 180, .75); box-shadow: 0 1px 1px rgba(0, 0, 0, .15); }
-.goal::before { left: -12px; transform: rotate(-30deg); }
-.goal::after { right: -12px; transform: rotate(30deg); }
+.goal { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 50%; transform: translateX(-50%); background: var(--hud-ink); color: #f7f5f0; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 14px; max-width: calc(100% - 28px); text-align: center; }
+.hint, .readout { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); text-align: center; color: var(--hud-ink); text-shadow: 0 1px 0 rgba(255, 255, 255, .6); }
+.hint { font-weight: 700; font-size: 15px; opacity: .8; animation: breathe 2s ease-in-out infinite; }
+.readout { font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+@keyframes breathe { 50% { opacity: .35; } }
 
-.hint, .readout { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); text-align: center; color: #fffaf0; text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 8px rgba(0, 0, 0, .5); }
-.hint { font: 700 25px var(--hand); animation: breathe 2.2s ease-in-out infinite; }
-.readout { font: 700 22px var(--hand); font-variant-numeric: tabular-nums; }
-@keyframes breathe { 50% { opacity: .5; } }
+.rack { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); display: flex; justify-content: center; gap: 8px; pointer-events: auto; }
+.club { display: grid; justify-items: center; gap: 2px; min-width: 72px; padding: 8px 8px 6px; border-radius: 12px; border: 2px solid transparent; background: var(--glass); font: 700 11px var(--ui); color: var(--hud-ink); cursor: pointer; }
+.club.sel { border-color: var(--hud-ink); }
+.club.used { opacity: .3; }
+.club:focus-visible { outline: 3px solid var(--gold); }
+.rack.point .club { animation: point 1.2s ease-in-out infinite; }
+@keyframes point { 50% { box-shadow: 0 0 0 4px rgba(242, 183, 5, .8); } }
 
-/* Bastidor de fusta amb els bitllots. */
-.rack { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; gap: 6px; padding: 8px 10px 10px; border-radius: 10px; pointer-events: auto; }
-.club { position: relative; display: grid; justify-items: center; gap: 2px; width: 82px; padding: 8px 4px 5px; border: 0; border-radius: 6px; cursor: pointer;
-  background: linear-gradient(180deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, .12)); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 220, 170, .35); transition: transform .12s; }
-.club span { font: 700 12px var(--sign); color: #fbe7c4; text-shadow: 0 -1px 0 rgba(0, 0, 0, .6); }
-.club .club-ico { filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .45)); transition: transform .15s; }
-.club.sel .club-ico { transform: translateY(-5px) rotate(-4deg); }
-.club.sel::after { content: ''; position: absolute; top: -6px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--gold); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
-.club.used { opacity: .35; }
-.club.used .club-ico { transform: rotate(8deg) translateY(4px); }
-.club:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.rack.point { animation: point 1.2s ease-in-out infinite; }
-@keyframes point { 50% { box-shadow: inset 0 1px 0 rgba(255, 228, 185, .55), 0 0 0 1px var(--wood-dark), 0 0 0 6px rgba(242, 183, 5, .65), 0 6px 14px rgba(0, 0, 0, .35); } }
-
-/* Resultat: segell de tinta sobre la pantalla. */
-.toast { position: absolute; left: 0; right: 0; top: 28%; display: grid; justify-items: center; gap: 8px; opacity: 0; transform: scale(1.6); transition: opacity .12s, transform .22s cubic-bezier(.3, 1.5, .5, 1); }
+.toast { position: absolute; left: 0; right: 0; top: 30%; text-align: center; opacity: 0; transform: scale(.8); transition: opacity .2s, transform .25s cubic-bezier(.2, 1.6, .4, 1); color: var(--hud-ink); }
 .toast.show { opacity: 1; transform: scale(1); }
-.toast .stamp { font-size: 40px; background: rgba(250, 244, 230, .82); }
-.toast.big .stamp { font-size: 56px; }
-.toast small { font: 700 21px/1.15 var(--hand); color: #fffaf0; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); max-width: 90%; text-align: center; }
+.toast b { display: block; font-size: 44px; font-weight: 900; letter-spacing: -.02em; text-shadow: 0 2px 0 #f7f5f0; }
+.toast.big b { font-size: 64px; text-shadow: 0 3px 0 var(--gold); }
+.toast small { display: inline-block; margin-top: 6px; font-weight: 700; font-size: 13px; background: var(--glass); padding: 4px 10px; border-radius: 99px; }
 
-/* Transportador de llautó. */
-.prot { position: absolute; left: 0; top: 0; width: 110px; height: 110px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
+.prot { position: absolute; left: 0; top: 0; width: 100px; height: 100px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .4)); }
 .prot svg { width: 100%; height: 100%; }
-.prot b { position: absolute; top: -22px; left: 0; right: 0; text-align: center; color: #fffaf0; font: 700 26px var(--hand); text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+.prot b { position: absolute; top: -18px; left: 0; right: 0; text-align: center; color: #fff; font-size: 18px; font-weight: 900; }
 
-/* Dit fantasma (tutorial): marca de guix. */
-.ghost { position: absolute; left: 0; top: 0; width: 46px; height: 46px; border-radius: 50%; border: 3px dashed rgba(255, 250, 235, .95); background: radial-gradient(circle, rgba(242, 183, 5, .55), rgba(242, 183, 5, .15) 70%); box-shadow: 0 0 0 4px rgba(0, 0, 0, .15); }
+.ghost { position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-radius: 50%; background: rgba(242, 183, 5, .55); border: 3px solid var(--hud-ink); box-shadow: 0 0 0 6px rgba(247, 245, 240, .6); }
 
 .fps { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); font: 600 11px ui-monospace, Menlo, monospace; background: rgba(0, 0, 0, .55); color: #fff; padding: 3px 6px; border-radius: 4px; pointer-events: none; }
 
-@media (prefers-reduced-motion: reduce) { .hint, .rack.point { animation: none; } .toast, .club, .club .club-ico { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .hint, .rack.point .club { animation: none; } .toast { transition: none; } }

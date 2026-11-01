@@ -5,7 +5,7 @@ import { SwipeInput } from './game/input';
 import { cheer, knock, unlockAudio, vibrate } from './game/feedback';
 import { LESSONS, type Lesson } from './game/tutorial';
 import { PAGINES, questionari, type Pregunta } from './game/regles';
-import { clubIcon, pinIcon } from './game/art';
+import { clubIcon } from './game/art';
 import {
   ALL_BITLLOTS, BITLLOTS, newPartida, partidaScore, planFromSeed, pushResult, rondaOf, scoreTirada, shareText, tiradaOver,
   TOTAL_TIRADES, type BitllotKind, type DailyPlan, type Partida, type TiradaResult,
@@ -216,7 +216,7 @@ function lessonSettled() {
   const L = LESSONS[S.lesson];
   const down = field.down();
   const ok = L.check({ down, startDown: S.startDown, pubilla: S.pubilla, inputs: S.inputs, kinds: S.used.map((i) => S.hand[i]) });
-  const outOfClubs = S.used.length >= S.hand.length || down.filter(Boolean).length >= 5;
+  const outOfClubs = S.used.length >= S.hand.length || down.filter(Boolean).length >= 5 || !!L.oneShot;
   if (ok) {
     cheer(true);
     vibrate([20, 40, 20]);
@@ -325,8 +325,7 @@ function showResult(r: TiradaResult) {
     r.multiplier > 1 ? `×${r.multiplier} bitllots estalviats` : '',
     r.saved ? `${r.saved} estalviat${r.saved > 1 ? 's' : ''} → ×${1 + 0.5 * r.saved} a la següent` : '',
   ].filter(Boolean).join(' · ');
-  const tone = r.label === 'bitlla d\'or' ? 'gold' : big ? '' : r.label === 'llenya' ? 'green' : 'green';
-  hud.toast.innerHTML = `<span class="stamp ${tone}">${title}</span><small>${extra}</small>`;
+  hud.toast.innerHTML = `<b>${title}</b><small>${extra}</small>`;
   hud.toast.className = `toast show ${big ? 'big' : ''}`;
   if (big) { cheer(r.bitllaOr); vibrate([30, 60, 30, 60, 60]); }
 }
@@ -394,7 +393,7 @@ function renderRack() {
     const b = BITLLOTS[k];
     const el = document.createElement('button');
     el.className = `club ${S.used.includes(i) ? 'used' : ''} ${i === S.selected ? 'sel' : ''}`;
-    el.innerHTML = `${clubIcon(k, 70)}<span>${b.name}</span>`;
+    el.innerHTML = `${clubIcon(k, 52)}<span>${b.name}</span>`;
     el.setAttribute('aria-label', `Bitllot ${b.name}${S.used.includes(i) ? ', ja llançat' : ''}`);
     el.disabled = S.used.includes(i) || S.phase !== 'aim';
     el.addEventListener('click', (e) => { e.stopPropagation(); S.selected = i; renderRack(); });
@@ -405,7 +404,7 @@ function renderRack() {
 
 function renderPins() {
   const down = field.down();
-  hud.pins.innerHTML = down.map((d, i) => pinIcon({ down: d, pubilla: i === S.pubilla, w: 13 })).join('');
+  hud.pins.innerHTML = down.map((d, i) => `<i class="${d ? 'down' : ''} ${i === S.pubilla ? 'pub' : ''}"></i>`).join('');
 }
 
 swipe.onMove = (g) => {
@@ -501,14 +500,7 @@ function frame(now: number) {
       hud.prot.hidden = false;
       hud.prot.style.transform = `translate(${sp.x - 50}px, ${sp.y - 90}px)`;
       const a = tilts[wobble];
-      // Transportador de llautó: semicercle graduat, línia vermella als 45° i agulla amb la inclinació.
-      const rad = (d: number) => (d * Math.PI) / 180;
-      const ticks = Array.from({ length: 19 }, (_, k) => { const d = k * 10, r0 = k % 3 === 0 ? 33 : 37; return `<line x1="${50 + 42 * Math.cos(rad(d))}" y1="${88 - 42 * Math.sin(rad(d))}" x2="${50 + r0 * Math.cos(rad(d))}" y2="${88 - r0 * Math.sin(rad(d))}" stroke="#5a4100" stroke-width="1"/>`; }).join('');
-      const g = 90 - a;
-      hud.prot.innerHTML = `<svg viewBox="0 0 100 100"><defs><linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc8a"/><stop offset=".6" stop-color="#c9a24a"/><stop offset="1" stop-color="#8a6a20"/></linearGradient></defs>
-        <path d="M6 88 A44 44 0 0 1 94 88 Z M24 88 A26 26 0 0 0 76 88 Z" fill="url(#brass)" fill-rule="evenodd" stroke="#5a4100" stroke-width="1"/>${ticks}
-        <line x1="50" y1="88" x2="${50 + 44 * Math.cos(rad(45))}" y2="${88 - 44 * Math.sin(rad(45))}" stroke="#b3302a" stroke-width="2"/>
-        <line x1="50" y1="88" x2="${50 + 46 * Math.cos(rad(g))}" y2="${88 - 46 * Math.sin(rad(g))}" stroke="${g < 45 ? '#b3302a' : '#2b2119'}" stroke-width="3.5" stroke-linecap="round"/><circle cx="50" cy="88" r="3" fill="#2b2119"/></svg><b>${g.toFixed(0)}°</b>`;
+      hud.prot.innerHTML = `<svg viewBox="0 0 100 100"><path d="M50 90 L50 20" stroke="#fff" stroke-width="1.5" opacity=".5"/><path d="M50 90 L99.5 40.5" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/><path d="M50 90 L${50 + 70 * Math.sin((a * Math.PI) / 180)} ${90 - 70 * Math.cos((a * Math.PI) / 180)}" stroke="${a > 45 ? 'var(--danger)' : '#fff'}" stroke-width="4" stroke-linecap="round"/></svg><b>${(90 - a).toFixed(0)}°</b>`;
       if (Math.floor(S.t * 12) % 2 === 0) vibrate(4);
     } else hud.prot.hidden = true;
 

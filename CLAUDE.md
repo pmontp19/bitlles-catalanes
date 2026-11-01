@@ -29,7 +29,7 @@ src/game/regles.ts     "Les regles del joc": llibret del reglament real (pàgine
 src/game/art.ts        Il·lustracions SVG (bitlla, bitllot, plantada, angle, pista, fitxa tècnica) i icones del HUD.
 src/game/feedback.ts   So i vibració. Punt únic per canviar-ho per Haptics natiu (Capacitor).
 src/main.ts            Màquina d'estats (menú, tutorial, regles, qüestionari, partida, diària, acta) i HUD.
-src/style.css          Interfície esqueuomòrfica: fusta, paper, pissarra, placa esmaltada, segell, llautó.
+src/style.css          HUD de joc net; menús, lliçons, llibret i acta esqueuomòrfics (fusta, paper, placa esmaltada, segell).
 public/fonts/          Zilla Slab (rètols), Caveat (mà/guix), Source Serif 4 (llibret). OFL, allotjades al joc.
 src/worker/index.ts    Worker de Cloudflare.
 ```
@@ -59,7 +59,7 @@ Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllot
 
 ## Interfície
 
-Cada targeta és un material (`card(html, botons, variant)`): `board` (rètol de fusta, menú), `note` (nota clavada, lliçons), `book` (llibret), `acta` (full de partida), `paper`. Botons: `.btn` (placa de fusta), `.btn.primary` (placa esmaltada verda), `.btn.flat` (enllaç). Resultats amb `.stamp` (segell de tinta). Textures només amb CSS/SVG; res d'imatges.
+El HUD de joc (marcador, bitlles, bastidor, objectiu, resultat, transportador) és net i pla, sense materials. L'esqueumorfisme és per a la resta: cada targeta és un material (`card(html, botons, variant)`): `board` (rètol de fusta, menú), `note` (nota clavada, lliçons), `book` (llibret), `acta` (full de partida), `paper`. Botons: `.btn` (placa de fusta), `.btn.primary` (placa esmaltada verda), `.btn.flat` (enllaç). Resultats amb `.stamp` (segell de tinta). Textures només amb CSS/SVG; res d'imatges.
 
 ## Convencions
 

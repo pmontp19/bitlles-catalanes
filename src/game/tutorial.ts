@@ -27,6 +27,8 @@ export type Lesson = {
   ghost?: 'straight' | 'angle' | 'curve';
   /** Assenyala el bastidor de bitllots. */
   pointRack?: boolean;
+  /** S'avalua després del primer llançament i s'acaba. */
+  oneShot?: boolean;
   /** Lliçó sense tirada: només explicació (amb il·lustració). */
   explainOnly?: 'tria';
   check: LessonCheck;
@@ -90,9 +92,10 @@ export const LESSONS: Lesson[] = [
     pubilla: null,
     bitllots: ['alzina', 'boix', 'cinta'],
     pointRack: true,
-    check: (s) => s.kinds.includes('boix'),
+    oneShot: true,
+    check: (s) => s.kinds[0] === 'boix',
     success: 'Ja saps canviar de bitllot.',
-    fail: 'Abans de llançar, toca el bitllot de boix al bastidor de baix.',
+    fail: 'Has llançat un altre bitllot. Abans de llançar, toca el de boix al bastidor de baix.',
   },
   {
     id: 'deixan-una',
