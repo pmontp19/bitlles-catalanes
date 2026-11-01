@@ -2,7 +2,7 @@
 
 Bitlles catalanes en 3D per al mòbil. Tomba'n cinc i deixa'n una dreta: val 10 punts. Totes sis, només 6.
 
-**Estat:** prototip jugable. La mecànica i el tutorial funcionen. L'estètica final encara no està decidida: hi ha el gris i una prova de **realisme**.
+**Estat:** prototip jugable amb estètica realista. La mecànica, el tutorial, les regles, la plantada del dia i la instal·lació com a app funcionen.
 
 ## Com es juga
 
@@ -65,14 +65,14 @@ Bitlla! és una PWA: es pot afegir a la pantalla d'inici i funciona sense connex
 
 Durant el joc, la interfície és neta i plana perquè no distregui. La resta té un toc d'esqueumorfisme: el menú és un rètol de fusta, les lliçons són notes clavades amb xinxeta, les regles són un llibret i el final de partida és una acta escrita a mà. Les fonts (Zilla Slab, Caveat i Source Serif 4, llicència OFL) van allotjades al joc.
 
-## Estètiques
+## Estètica
+
+Totes les pantalles fan servir l'estètica realista. Paràmetres opcionals:
 
 | Paràmetre | Què fa |
 |---|---|
-| `?estil=realisme` (per defecte) | Llum d'una foto HDR real d'un parc de Palerm, terra de sauló, bitlles de fusta d'alzina amb anella de ferro, còdols, pols quan cauen, ombres de contacte i profunditat de camp. |
 | `?escenari=vilanova` (per defecte) | Pista de Vilanova i la Geltrú: sauló clar, tanca verda amb xarxa i pistes numerades, fanals, pèrgola, rètol i bitlles amb el cap pintat. |
 | `?escenari=parc` | Parc amb terra i plàtans, llum suau de tarda i bitlles amb anelles pintades al coll. |
-| `?estil=gris` | Versió en gris per centrar-se en la mecànica. |
 | `?q=baixa` | Realisme sense postprocessat i amb ombres i còdols reduïts, per a mòbils modestos. |
 | `?fps` | Mostra els fotogrames per segon per provar el rendiment en mòbils reals. |
 

@@ -1,6 +1,6 @@
 # Desplegament a Cloudflare Workers
 
-Guia per a la persona o l'agent que desplegui Bitlla!. Tot el codi és a `main`; no cal tocar res del joc.
+Guia per a la persona o l'agent que desplegui Bitlla!. Tot el codi és a **`main`**: desplega aquesta branca i cap altra (la branca `claude/joc-bitlles` és un projecte diferent, en pixel art, i no s'ha de desplegar).
 
 ## Què es desplega
 
@@ -73,7 +73,7 @@ Al mòbil:
 3. Juga la «Plantada del dia», posa un àlies i comprova que surt la posició i el rànquing a la pissarra.
 4. Torna a entrar a la plantada del dia: ha d'ensenyar l'acta, no deixar jugar de nou.
 5. Android: després de la primera partida, el menú ha d'oferir «Instal·la Bitlla!». iPhone: ha d'explicar com afegir-la a la pantalla d'inici.
-6. Obre `$URL/?fps` per veure el rendiment real. Si va lent: `?q=baixa`, o `?estil=gris` per comparar.
+6. Obre `$URL/?fps` per veure el rendiment real. Si va lent: `?q=baixa`.
 
 ## A tenir en compte
 

@@ -1,6 +1,6 @@
 # Bitlla! — guia per a agents
 
-Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat; l'estètica encara no està decidida. Hi ha dues estètiques: gris (greybox) i realisme (prova).
+Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat. Estètica única: realisme (`look-realisme.ts`), sempre activa.
 
 ## Ordres
 
@@ -8,7 +8,7 @@ Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat; l'estètica e
 - `npm run typecheck`: TypeScript estricte.
 - `npm run build`: compila a `dist/`.
 - `npm run sim`: ajust de dificultat per Monte Carlo (`N=40 CAT=masculina npm run sim`). Fes-lo servir abans i després de tocar física o el mapa del gest, i posa els números al missatge del commit.
-- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Al contenidor el render és per programari i va lent: `E2E_QUERY='&estil=gris'` o `'&q=baixa'` per accelerar-lo.
+- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Per defecte fa servir `?q=baixa` perquè al contenidor el render és per programari i va lent.
 - `npm run cf:dev` / `npm run deploy`: Worker de Cloudflare (Static Assets + API de la plantada del dia). **Per desplegar, segueix [DEPLOY.md](DEPLOY.md)** (cal crear la D1 i posar-ne el `database_id` a `wrangler.jsonc`).
 
 ## Arquitectura
@@ -18,7 +18,7 @@ src/game/constants.ts  Mides i regles del reglament FCBB. Font de veritat.
 src/game/rules.ts      Regles pures: puntuació, tirada, partida, pubilla, bitllots, llavor diària. Sense física ni DOM.
 src/game/physics.ts    Rapier. Sense three.js ni DOM: es testeja a Node. `launchFromInput` mapeja gest → velocitats.
 src/game/input.ts      Gest (pantalla) → ThrowInput {aim, power, spin}. Funció pura `gestureToInput`.
-src/game/scene.ts      Render three.js (gris per defecte). Només llegeix estats; mai decideix regles. Exposa ganxos per a l'estètica.
+src/game/scene.ts      Render three.js de base (materials simples). Només llegeix estats; mai decideix regles. Exposa ganxos que el realisme omple.
 src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdols, pols, ombres de contacte, profunditat de camp.
                        Escenaris a `ESCENARIS` (foto 360°, sol, terra, línies, pintura).
 src/game/escenari-vilanova.ts  Decorat modelat de la pista de Vilanova (tanca, fanals, pèrgola, pistes veïnes).
@@ -41,9 +41,9 @@ migrations/            Esquema de D1. Canvis d'esquema: nova migració, mai edit
 
 Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene` només depèn de `constants` i tipus. No importis three.js a `rules`/`physics`.
 
-Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia geometria visual (`pinGeo`, `clubGeo`, `decoratePin`), materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). Es carrega amb `import()` dinàmic a `main.ts` perquè el gris no pagui el pes. Mai toquis regles ni física des d'una estètica.
+Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia geometria visual (`pinGeo`, `clubGeo`, `decoratePin`), materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). El realisme es carrega sempre a l'arrencada (`import()` a `main.ts`); no hi ha cap altra estètica seleccionable. Mai toquis regles ni física des d'una estètica.
 
-Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?escenari=vilanova|parc` (per defecte vilanova), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
+Paràmetres d'URL: `?escenari=vilanova|parc` (per defecte vilanova), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
 
 ## Reglament (resum, FCBB 2010)
 
