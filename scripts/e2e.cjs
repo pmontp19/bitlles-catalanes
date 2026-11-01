@@ -3,6 +3,8 @@
 const { chromium } = require('playwright');
 const URL_ = process.argv[2] || 'http://localhost:4173/';
 const OUT = process.argv[3] || 'e2e-shots';
+// Paràmetres extra, p. ex. E2E_QUERY='&estil=gris' o '&q=baixa' (el render per programari és lent).
+const Q = process.env.E2E_QUERY || '';
 require('fs').mkdirSync(OUT, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -11,9 +13,9 @@ require('fs').mkdirSync(OUT, { recursive: true });
   p.on('pageerror', (e) => errors.push(e.message));
   const swipe = async (pts) => { await p.mouse.move(...pts[0]); await p.mouse.down(); for (const q of pts.slice(1)) await p.mouse.move(q[0], q[1], { steps: 4 }); await p.mouse.up(); };
   const phase = () => p.evaluate(() => window.__bitlla.S.phase);
-  const waitThrow = () => p.waitForFunction(() => window.__bitlla.S.phase !== 'flight', null, { timeout: 30000 });
+  const waitThrow = () => p.waitForFunction(() => window.__bitlla.S.phase !== 'flight', null, { timeout: 240000 });
 
-  await p.goto(URL_ + '?tutorial=0'); await p.waitForSelector('.card');
+  await p.goto(URL_ + '?tutorial=0' + Q); await p.waitForSelector('.card');
   await p.screenshot({ path: `${OUT}/01-leccio.png` });
   for (let i = 0; i < 12; i++) {
     if (await p.$('text=Ja estàs a punt')) break;

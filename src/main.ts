@@ -439,14 +439,41 @@ function frame(now: number) {
     hud.ghost.style.opacity = String(g.o);
   } else hud.ghost.hidden = true;
 
-  scene.render();
+  scene.render(dt);
   requestAnimationFrame(frame);
+}
+
+// ---------- Comptador de FPS (?fps) per provar el rendiment en mòbils reals ----------
+function startFps() {
+  const el = document.createElement('div');
+  el.className = 'fps';
+  stage.appendChild(el);
+  let frames = 0, t0 = performance.now(), worst = 0, prev = t0;
+  const tick = (now: number) => {
+    frames++;
+    worst = Math.max(worst, now - prev);
+    prev = now;
+    if (now - t0 > 1000) {
+      el.textContent = `${Math.round((frames * 1000) / (now - t0))} fps · pitjor ${worst.toFixed(0)} ms · ${scene.renderer.info.render.calls} crides`;
+      frames = 0; t0 = now; worst = 0;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 // ---------- Arrencada ----------
 async function boot() {
   await initPhysics();
   scene = new GameScene(canvas);
+  // Estètica: ?estil=gris per comparar; ?q=baixa sense postprocessat ni ombres fines.
+  const params0 = new URLSearchParams(location.search);
+  if ((params0.get('estil') ?? 'realisme') === 'realisme') {
+    $('loading').textContent = 'Carregant la plaça…';
+    const { applyRealisme } = await import('./game/look-realisme');
+    await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta');
+  }
+  if (params0.has('fps')) startFps();
   const resize = () => scene.resize(stage.clientWidth, stage.clientHeight);
   addEventListener('resize', resize);
   resize();

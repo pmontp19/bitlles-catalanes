@@ -1,5 +1,6 @@
-// Render en gris (greybox) amb three.js. Només llegeix estats de la física; no en decideix res.
-// L'estètica final s'aplicarà substituint materials i escenari aquí, sense tocar regles ni física.
+// Render amb three.js. Només llegeix estats de la física; no en decideix res.
+// Per defecte és el gris (greybox). Una estètica (p. ex. `look-realisme.ts`) substitueix materials,
+// pista, llum i postprocessat a través dels ganxos públics d'aquesta classe, sense tocar regles ni física.
 import * as THREE from 'three';
 import { CLUB_PROFILE, LANE_WIDTH, PIN_PROFILE } from './constants';
 import type { BodyState } from './physics';
@@ -19,14 +20,43 @@ export const COLORS = {
   danger: 0xe0533b,
 };
 
+const TRAIL_MAX = 90;
+
+export type CameraMode = 'aim' | 'follow' | 'pins';
+
+/** Postprocessat opcional (el defineix l'estètica). */
+export interface PostFX {
+  resize(w: number, h: number, dpr: number): void;
+  render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, focus: number, mode: CameraMode): void;
+}
+
 export class GameScene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
   private pinGeo = lathe(PIN_PROFILE, 28);
   private clubGeo = lathe(CLUB_PROFILE, 24);
-  private pinMat = new THREE.MeshStandardMaterial({ color: COLORS.pin, roughness: 0.6 });
-  private ringMat = new THREE.MeshStandardMaterial({ color: COLORS.ring, roughness: 0.5, metalness: 0.4 });
+  pinMat = new THREE.MeshStandardMaterial({ color: COLORS.pin, roughness: 0.6 });
+  ringMat: THREE.Material = new THREE.MeshStandardMaterial({ color: COLORS.ring, roughness: 0.5, metalness: 0.4 });
+  // ---- Ganxos per a l'estètica ----
+  /** Material de cada bitlla (permet variar-les una a una). */
+  pinMatFor: (i: number) => THREE.Material = () => this.pinMat;
+  /** Material d'un bitllot del color del seu tipus. */
+  clubMatFor: (color: number) => THREE.Material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
+  /** Pista: superfície i línies per a una distància de llançament. */
+  laneFor: (d: number) => THREE.Object3D[] = (d) => this.greyLane(d);
+  /** Quan una bitlla passa a estar tombada (pols, so...). */
+  onKnockDown: (x: number, z: number) => void = () => {};
+  /** Després de moure les bitlles (ombres de contacte...). */
+  afterSync: (pins: (BodyState | null)[]) => void = () => {};
+  /** Coses que s'animen cada fotograma (partícules...). */
+  tickers: ((dt: number) => void)[] = [];
+  post: PostFX | null = null;
+  ground: THREE.Mesh;
+  sun: THREE.DirectionalLight;
+  hemi: THREE.HemisphereLight;
+  mode: CameraMode = 'aim';
+  private prevDown: boolean[] = [];
   private pinMeshes: THREE.Group[] = [];
   private clubMeshes: THREE.Mesh[] = [];
   private lines: THREE.Object3D[] = [];
@@ -51,8 +81,8 @@ export class GameScene {
     this.scene.background = new THREE.Color(COLORS.sky);
     this.scene.fog = new THREE.Fog(COLORS.sky, 14, 40);
 
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x9a8f80, 1.4);
-    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    const hemi = (this.hemi = new THREE.HemisphereLight(0xffffff, 0x9a8f80, 1.4));
+    const sun = (this.sun = new THREE.DirectionalLight(0xffffff, 2.2));
     sun.position.set(-4, 9, 3);
     sun.target.position.set(0, 0, -0.2);
     sun.castShadow = true;
@@ -61,7 +91,7 @@ export class GameScene {
     sun.shadow.bias = -0.0004;
     this.scene.add(hemi, sun, sun.target);
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: COLORS.ground, roughness: 1 }));
+    const ground = (this.ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: COLORS.ground, roughness: 1 })));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
@@ -78,7 +108,11 @@ export class GameScene {
     this.landing.visible = false;
     this.arc = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: COLORS.aim, dashSize: 0.12, gapSize: 0.08, transparent: true, opacity: 0.85 }));
     this.arc.visible = false;
-    this.trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 3), 3));
+    trailGeo.setDrawRange(0, 0);
+    this.trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
+    this.trail.frustumCulled = false;
     this.scene.add(this.landing, this.arc, this.trail);
     this.setDistance(this.distance);
   }
@@ -87,7 +121,11 @@ export class GameScene {
   setDistance(d: number) {
     this.distance = d;
     for (const l of this.lines) this.scene.remove(l);
-    this.lines = [];
+    this.lines = this.laneFor(d);
+    for (const l of this.lines) this.scene.add(l);
+  }
+
+  private greyLane(d: number): THREE.Object3D[] {
     const lane = new THREE.Mesh(new THREE.PlaneGeometry(LANE_WIDTH, 16.5), new THREE.MeshStandardMaterial({ color: COLORS.lane, roughness: 1 }));
     lane.rotation.x = -Math.PI / 2;
     lane.position.set(0, 0.001, 16.5 / 2 - 3);
@@ -97,12 +135,12 @@ export class GameScene {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), lineMat);
       m.rotation.x = -Math.PI / 2; m.position.set(x, 0.002, z); return m;
     };
-    this.lines.push(lane, mk(LANE_WIDTH, 0.04, 0, 0), mk(LANE_WIDTH, 0.05, 0, d), mk(0.03, 16.5, -LANE_WIDTH / 2, 16.5 / 2 - 3), mk(0.03, 16.5, LANE_WIDTH / 2, 16.5 / 2 - 3));
-    for (const l of this.lines) this.scene.add(l);
+    return [lane, mk(LANE_WIDTH, 0.04, 0, 0), mk(LANE_WIDTH, 0.05, 0, d), mk(0.03, 16.5, -LANE_WIDTH / 2, 16.5 / 2 - 3), mk(0.03, 16.5, LANE_WIDTH / 2, 16.5 / 2 - 3)];
   }
 
   resize(w: number, h: number) {
     this.renderer.setSize(w, h, false);
+    this.post?.resize(w, h, this.renderer.getPixelRatio());
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   }
@@ -114,10 +152,11 @@ export class GameScene {
     this.pinMeshes = [];
     this.clubMeshes = [];
     this.trailPts = [];
-    this.trail.geometry.setFromPoints([]);
-    present.forEach((p) => {
+    this.trail.geometry.setDrawRange(0, 0);
+    this.prevDown = present.map((p) => !p);
+    present.forEach((p, i) => {
       const g = new THREE.Group();
-      const body = new THREE.Mesh(this.pinGeo, this.pinMat);
+      const body = new THREE.Mesh(this.pinGeo, this.pinMatFor(i));
       body.castShadow = body.receiveShadow = true;
       const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.0465, 0.0465, 0.022, 28), this.ringMat);
       ring.position.y = 0.012;
@@ -130,7 +169,7 @@ export class GameScene {
   }
 
   addClub(color: number) {
-    const m = new THREE.Mesh(this.clubGeo, new THREE.MeshStandardMaterial({ color, roughness: 0.55 }));
+    const m = new THREE.Mesh(this.clubGeo, this.clubMatFor(color));
     m.castShadow = true;
     this.scene.add(m);
     this.clubMeshes.push(m);
@@ -150,11 +189,19 @@ export class GameScene {
       m.position.set(s.x, s.y, s.z);
       m.quaternion.set(s.q.x, s.q.y, s.q.z, s.q.w);
     });
+    down.forEach((d, i) => {
+      if (d && !this.prevDown[i] && pins[i]) this.onKnockDown(pins[i]!.x, pins[i]!.z);
+    });
+    this.prevDown = [...down];
+    this.afterSync(pins);
     const last = clubs[clubs.length - 1];
     if (last && last.y > 0.05 && last.z > -3) {
       this.trailPts.push(new THREE.Vector3(last.x, last.y, last.z));
-      if (this.trailPts.length > 90) this.trailPts.shift();
-      this.trail.geometry.setFromPoints(this.trailPts);
+      if (this.trailPts.length > TRAIL_MAX) this.trailPts.shift();
+      const attr = this.trail.geometry.getAttribute('position') as THREE.BufferAttribute;
+      this.trailPts.forEach((p, i) => attr.setXYZ(i, p.x, p.y, p.z));
+      attr.needsUpdate = true;
+      this.trail.geometry.setDrawRange(0, this.trailPts.length);
     }
     const ps = pubilla !== null ? pins[pubilla] : null;
     const show = !!ps && !down[pubilla!];
@@ -185,7 +232,8 @@ export class GameScene {
   }
 
   /** Càmera: `aim` darrere la línia, `follow` darrere del bitllot, `pins` a prop de la plantada. */
-  updateCamera(mode: 'aim' | 'follow' | 'pins', club: BodyState | undefined, dt: number, snap = false) {
+  updateCamera(mode: CameraMode, club: BodyState | undefined, dt: number, snap = false) {
+    this.mode = mode;
     const d = this.distance;
     const pos = new THREE.Vector3();
     const look = new THREE.Vector3(0, 0.22, -0.1);
@@ -213,7 +261,11 @@ export class GameScene {
     return { x: (v.x * 0.5 + 0.5) * w, y: (-v.y * 0.5 + 0.5) * h, visible: v.z < 1 };
   }
 
-  render() {
-    this.renderer.render(this.scene, this.camera);
+  render(dt = 0) {
+    for (const t of this.tickers) t(dt);
+    if (this.post) {
+      const focus = this.camera.position.distanceTo(new THREE.Vector3(0, 0.25, -0.08));
+      this.post.render(this.renderer, this.scene, this.camera, focus, this.mode);
+    } else this.renderer.render(this.scene, this.camera);
   }
 }

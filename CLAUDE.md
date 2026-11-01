@@ -1,6 +1,6 @@
 # Bitlla! — guia per a agents
 
-Joc mòbil 3D de bitlles catalanes. Prototip en gris: la mecànica és la prioritat; l'estètica encara no està decidida.
+Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat; l'estètica encara no està decidida. Hi ha dues estètiques: gris (greybox) i realisme (prova).
 
 ## Ordres
 
@@ -8,7 +8,7 @@ Joc mòbil 3D de bitlles catalanes. Prototip en gris: la mecànica és la priori
 - `npm run typecheck`: TypeScript estricte.
 - `npm run build`: compila a `dist/`.
 - `npm run sim`: ajust de dificultat per Monte Carlo (`N=40 CAT=masculina npm run sim`). Fes-lo servir abans i després de tocar física o el mapa del gest, i posa els números al missatge del commit.
-- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina.
+- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Al contenidor el render és per programari i va lent: `E2E_QUERY='&estil=gris'` o `'&q=baixa'` per accelerar-lo.
 - `npm run cf:dev` / `npm run deploy`: Worker de Cloudflare (Static Assets + `/api/daily`).
 
 ## Arquitectura
@@ -18,7 +18,9 @@ src/game/constants.ts  Mides i regles del reglament FCBB. Font de veritat.
 src/game/rules.ts      Regles pures: puntuació, tirada, partida, pubilla, bitllots, llavor diària. Sense física ni DOM.
 src/game/physics.ts    Rapier. Sense three.js ni DOM: es testeja a Node. `launchFromInput` mapeja gest → velocitats.
 src/game/input.ts      Gest (pantalla) → ThrowInput {aim, power, spin}. Funció pura `gestureToInput`.
-src/game/scene.ts      Render three.js. Només llegeix estats; mai decideix regles. Aquí anirà l'estètica.
+src/game/scene.ts      Render three.js (gris per defecte). Només llegeix estats; mai decideix regles. Exposa ganxos per a l'estètica.
+src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdols, pols, ombres de contacte, profunditat de camp.
+public/realisme/       Recursos CC0 (Poly Haven). Vegeu LLICENCIES.md abans d'afegir-ne.
 src/game/tutorial.ts   Lliçons (dades + funció `check`).
 src/game/feedback.ts   So i vibració. Punt únic per canviar-ho per Haptics natiu (Capacitor).
 src/main.ts            Màquina d'estats de la sessió (menú, tutorial, partida, diària) i HUD.
@@ -26,6 +28,10 @@ src/worker/index.ts    Worker de Cloudflare.
 ```
 
 Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene` només depèn de `constants` i tipus. No importis three.js a `rules`/`physics`.
+
+Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). Es carrega amb `import()` dinàmic a `main.ts` perquè el gris no pagui el pes. Mai toquis regles ni física des d'una estètica.
+
+Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
 
 ## Reglament (resum, FCBB 2010)
 
@@ -43,4 +49,6 @@ Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllot
 - Textos de la interfície en català. Comentaris en català.
 - Qualsevol canvi de física o del gest: `npm test` + `npm run sim`, i comprova que les bitlles plantades no cauen soles (test).
 - Qualsevol canvi visual o de flux: `npm run e2e` i mira les captures.
-- El paràmetre `?tutorial=N` obre directament la lliçó N. `window.__bitlla` exposa l'estat per a proves.
+- `window.__bitlla` exposa l'estat per a proves.
+- Recursos visuals: llicència CC0 o pròpia, documentats a `public/realisme/LLICENCIES.md`. Pressupost actual del realisme: ~7,5 MB. Comprimeix (JPG/KTX2) abans d'afegir-ne.
+- El rendiment real només es pot mesurar en mòbils: el contenidor fa servir render per programari.

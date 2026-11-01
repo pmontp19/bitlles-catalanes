@@ -2,7 +2,7 @@
 
 Bitlles catalanes en 3D per al mòbil. Tomba'n cinc i deixa'n una dreta: val 10 punts. Totes sis, només 6.
 
-**Estat:** prototip jugable en gris. La mecànica i el tutorial funcionen; l'estètica final encara no està decidida.
+**Estat:** prototip jugable. La mecànica i el tutorial funcionen. L'estètica final encara no està decidida: hi ha el gris i una prova de **realisme**.
 
 ## Com es juga
 
@@ -52,6 +52,17 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
   🟫🟨🟫
   ```
 
+## Estètiques
+
+| Paràmetre | Què fa |
+|---|---|
+| `?estil=realisme` (per defecte) | Llum d'una foto HDR real d'un parc de Palerm, terra de sauló, bitlles de fusta d'alzina amb anella de ferro, còdols, pols quan cauen, ombres de contacte i profunditat de camp. |
+| `?estil=gris` | Versió en gris per centrar-se en la mecànica. |
+| `?q=baixa` | Realisme sense postprocessat i amb ombres i còdols reduïts, per a mòbils modestos. |
+| `?fps` | Mostra els fotogrames per segon per provar el rendiment en mòbils reals. |
+
+Els recursos del realisme són CC0 de [Poly Haven](https://polyhaven.com) (vegeu [public/realisme/LLICENCIES.md](public/realisme/LLICENCIES.md)) i pesen uns 7,5 MB. Per guanyar més realisme, el pas següent és escanejar bitlles i bitllots de debò i una pista real.
+
 ## Desenvolupament
 
 Requereix Node 20 o superior.
@@ -74,7 +85,8 @@ src/game/constants.ts  Mides del reglament (font de veritat)
 src/game/rules.ts      Regles pures: puntuació, partida, pubilla, bitllots
 src/game/physics.ts    Física amb Rapier, sense render (també corre a Node)
 src/game/input.ts      Gest → força, punteria i efecte
-src/game/scene.ts      Render amb three.js (aquí anirà l'estètica)
+src/game/scene.ts      Render amb three.js (gris) i ganxos per a les estètiques
+src/game/look-realisme.ts  Estètica realista
 src/game/tutorial.ts   Lliçons del tutorial
 src/game/feedback.ts   So i vibració
 src/main.ts            Flux del joc i HUD
@@ -96,7 +108,7 @@ npm run deploy
 
 ## Properes passes
 
-- Decidir l'estètica (propostes A–G: diorama, toon, trencadís, riso, revetlla, còmic XIII, realisme).
+- Decidir l'estètica (propostes A–G: diorama, toon, trencadís, riso, revetlla, còmic XIII, realisme). Del realisme: provar-ne el rendiment en mòbils reals, escanejar bitlles de debò i comprimir les textures a KTX2.
 - Ajustar el gest i la dificultat amb jugadors reals.
 - Rànquing de la plantada del dia (D1 o Durable Object).
 - Gira de festes majors: pobles amb modificadors (terra molla, pendent, tramuntana, revetlla).

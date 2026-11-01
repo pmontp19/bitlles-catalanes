@@ -84,3 +84,4 @@ button.bitllot-pick:active, button.bitllot-pick:focus-visible { border-color: va
 .share { margin: 4px 0 0; padding: 12px; background: #fff; border-radius: 10px; font: 16px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; user-select: text; -webkit-user-select: text; }
 .art { width: 100%; max-width: 280px; justify-self: center; color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .hint { animation: none; } .toast { transition: none; } }
+.fps { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); font: 600 11px ui-monospace, Menlo, monospace; background: rgba(0,0,0,.55); color: #fff; padding: 3px 6px; border-radius: 4px; pointer-events: none; }
