@@ -175,6 +175,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #cfc4ad; col
 .field input:focus-visible { border-bottom-color: var(--enamel); background: rgba(255, 255, 255, .35); }
 .posicio { font: 700 24px/1.1 var(--hand) !important; color: var(--enamel); margin-top: 4px !important; }
 
+/* Instal·lació: nota groga enganxada a l'acta i passos numerats. */
+.nota-installa { position: relative; display: grid; gap: 8px; padding: 12px 12px 10px; background: var(--tex-paper), #fbe9a6; box-shadow: 0 2px 4px rgba(60, 40, 10, .25); transform: rotate(-.8deg); }
+.nota-installa p { font: 400 15px/1.4 var(--serif) !important; }
+.nota-botons { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.nota-botons .btn { padding: 9px 12px; font-size: 15px; }
+.passos { margin: 0; padding-left: 22px; display: grid; gap: 10px; font: 400 17px/1.45 var(--serif); }
+.passos li::marker { font: 700 18px var(--sign); color: var(--red); }
+
 /* Tria 3 de 4: bitllots damunt d'un drap. */
 .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .bitllot-pick { display: grid; justify-items: center; gap: 4px; padding: 10px 8px; text-align: center; border: 0; border-radius: 6px; cursor: pointer; font: 14px var(--serif); color: var(--ink);

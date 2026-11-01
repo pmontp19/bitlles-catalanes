@@ -53,6 +53,14 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
   🟫🟨🟫
   ```
 
+## Instal·lar-la com a app
+
+Bitlla! és una PWA: es pot afegir a la pantalla d'inici i funciona sense connexió (un *service worker* desa el joc, les textures i les fonts; la plantada del dia i el rànquing sempre es demanen al servidor).
+
+- **Android (Chrome):** el joc proposa la instal·lació amb l'avís del sistema.
+- **iPhone (Safari):** el navegador no ho proposa mai sol, així que el joc explica els passos (Compartir → Afegeix a la pantalla d'inici).
+- **Quan:** no a la primera visita. Apareix al menú després de la primera partida i com a nota a l'acta; si es descarta, no es torna a proposar en 7 dies.
+
 ## Interfície
 
 Durant el joc, la interfície és neta i plana perquè no distregui. La resta té un toc d'esqueumorfisme: el menú és un rètol de fusta, les lliçons són notes clavades amb xinxeta, les regles són un llibret i el final de partida és una acta escrita a mà. Les fonts (Zilla Slab, Caveat i Source Serif 4, llicència OFL) van allotjades al joc.

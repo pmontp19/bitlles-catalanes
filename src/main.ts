@@ -6,6 +6,7 @@ import { cheer, knock, unlockAudio, vibrate } from './game/feedback';
 import { LESSONS, type Lesson } from './game/tutorial';
 import { PAGINES, questionari, type Pregunta } from './game/regles';
 import { clubIcon } from './game/art';
+import { comptaPartida, descarta, esIOS, ICONA_COMPARTIR, iniciaInstallacio, installa, potInstallar, tocaProposar } from './installa';
 import { dailyDate, dailyPlan, minutsFinsDema, netejaAlies, ordinal, type TiradaEnviada } from './game/diaria';
 import {
   ALL_BITLLOTS, BITLLOTS, newPartida, partidaScore, planFromSeed, pushResult, rondaOf, scoreTirada, shareText, tiradaOver,
@@ -115,6 +116,37 @@ function menu() {
     { label: 'Plantada del dia', sub: avui ? `Avui: ${partidaScore(avui.partida)} punts · nova d'aquí a ${fins(minutsFinsDema())}` : 'Un intent al dia, igual per a tothom', onClick: () => void startDaily() },
   ];
   for (const b of items) actions.appendChild(button(b));
+  if (potInstallar() && Number(store.get('partides') ?? 0) >= 1) {
+    actions.appendChild(button({ label: 'Instal·la Bitlla!', sub: 'Pantalla completa i sense connexió', flat: true, onClick: () => void proposaInstallar(menu) }));
+  }
+}
+
+// ---------- Instal·lació com a app ----------
+/** Android: avís natiu. iPhone: instruccions per afegir-la a la pantalla d'inici. */
+async function proposaInstallar(tornar: () => void) {
+  const r = await installa();
+  if (r !== null) return tornar();
+  if (!esIOS()) return tornar();
+  card(`<div class="step">Instal·la Bitlla!</div><h2>Afegeix-la a la pantalla d'inici</h2>
+    <ol class="passos">
+      <li>Toca el botó <b>Compartir</b> ${ICONA_COMPARTIR} de la barra del navegador.</li>
+      <li>Tria <b>Afegeix a la pantalla d'inici</b>.</li>
+      <li>Obre Bitlla! des de la icona nova: pantalla completa, sense barres i amb les partides desades.</li>
+    </ol>`, [
+    { label: 'Fet', primary: true, onClick: tornar },
+    { label: 'Ara no', flat: true, onClick: () => { descarta(); tornar(); } },
+  ], 'note');
+}
+
+/** Nota a l'acta: proposa instal·lar-la després d'haver jugat, com a molt un cop per setmana. */
+function notaInstallar(): string {
+  if (!tocaProposar()) return '';
+  return `<div class="nota-installa" id="nota-installa"><p><b>Tens Bitlla! a mà?</b> Afegeix-la a la pantalla d'inici: s'obre a pantalla completa, funciona sense connexió i la plantada del dia t'hi espera cada matí.</p><div class="nota-botons"><span id="ni-si"></span><span id="ni-no"></span></div></div>`;
+}
+function lligaNotaInstallar(tornar: () => void) {
+  if (!document.getElementById('nota-installa')) return;
+  $('ni-si').appendChild(button({ label: esIOS() ? 'Com s\'hi afegeix?' : 'Instal·la', primary: true, onClick: () => void proposaInstallar(tornar) }));
+  $('ni-no').appendChild(button({ label: 'Ara no', flat: true, onClick: () => { descarta(); $('nota-installa').remove(); } }));
 }
 
 // ---------- Les regles del joc (reglament) ----------
@@ -412,6 +444,7 @@ function showResult(r: TiradaResult) {
 
 function endPartida() {
   S.phase = 'end';
+  comptaPartida();
   const total = partidaScore(S.partida);
   const best = Number(store.get('millor') ?? 0);
   const record = total > best && best > 0;
@@ -458,7 +491,9 @@ function showActa(g: DiariaGuardada | null, record = false) {
     <div class="acta-grid">${rows}</div>
     <div class="acta-total"><div><p class="small">${bitlles} bitlles de 9 tirades</p>${posicio}${record ? '<span class="stamp gold" style="font-size:20px;margin-top:6px">Rècord</span>' : ''}</div><span class="num">${total}</span></div>
     ${dema}
-    <pre class="share" id="share-text">${text}</pre>`, buttons, 'acta');
+    <pre class="share" id="share-text">${text}</pre>
+    ${notaInstallar()}`, buttons, 'acta');
+  lligaNotaInstallar(() => showActa(g, record));
 }
 
 // ---------- Tirada (comú) ----------
@@ -648,6 +683,7 @@ function startFps() {
 
 // ---------- Arrencada ----------
 async function boot() {
+  iniciaInstallacio(() => { if (S.phase === 'menu') menu(); });
   await initPhysics();
   scene = new GameScene(canvas);
   // Estètica: ?estil=gris per comparar; ?q=baixa sense postprocessat ni ombres fines.

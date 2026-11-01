@@ -33,6 +33,9 @@ src/style.css          HUD de joc net; menús, lliçons, llibret i acta esqueuom
 public/fonts/          Zilla Slab (rètols), Caveat (mà/guix), Source Serif 4 (llibret). OFL, allotjades al joc.
 src/game/diaria.ts     Plantada del dia, compartit client/servidor: data (Europe/Madrid), llavor, verificació de partides, àlies.
 src/worker/index.ts    Worker de Cloudflare: Static Assets + API de la plantada (rànquing a D1, binding `DB`).
+src/installa.ts        PWA: quan i com proposar la instal·lació (Android: avís natiu; iOS: instruccions). Registra el service worker.
+public/sw.js           Service worker: pàgina amb xarxa primer, fitxers amb memòria cau primer, /api/ mai. Si canvies l'estratègia, puja `CACHE`.
+public/icones/         Icones de l'app (generades: placa esmaltada amb una bitlla dreta i dues de tombades).
 migrations/            Esquema de D1. Canvis d'esquema: nova migració, mai editar una d'aplicada.
 ```
 
