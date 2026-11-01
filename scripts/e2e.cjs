@@ -3,8 +3,9 @@
 const { chromium } = require('playwright');
 const URL_ = process.argv[2] || 'http://localhost:4173/';
 const OUT = process.argv[3] || 'e2e-shots';
-// Paràmetres extra (per defecte '&q=baixa': el render per programari del contenidor és lent).
-const Q = process.env.E2E_QUERY ?? '&q=baixa';
+// Paràmetres extra. Per defecte '&proves' (sense realisme): al contenidor el render és per programari i el realisme
+// fa que una partida trigui més d'una hora. Per provar el realisme: E2E_QUERY='&q=baixa'.
+const Q = process.env.E2E_QUERY ?? '&proves';
 require('fs').mkdirSync(OUT, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });

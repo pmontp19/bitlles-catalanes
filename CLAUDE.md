@@ -8,7 +8,7 @@ Joc mòbil 3D de bitlles catalanes. La mecànica és la prioritat. Estètica ún
 - `npm run typecheck`: TypeScript estricte.
 - `npm run build`: compila a `dist/`.
 - `npm run sim`: ajust de dificultat per Monte Carlo (`N=40 CAT=masculina npm run sim`). Fes-lo servir abans i després de tocar física o el mapa del gest, i posa els números al missatge del commit.
-- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Per defecte fa servir `?q=baixa` perquè al contenidor el render és per programari i va lent.
+- `npm run e2e`: amb `npx vite preview --port 4173` engegat, juga el tutorial sencer i una partida de 9 tirades en un mòbil simulat i desa captures. Falla si hi ha errors de pàgina. Per defecte fa servir `?proves` (sense realisme: el render per programari del contenidor el faria trigar més d'una hora); per provar el realisme, `E2E_QUERY='&q=baixa'` i molta paciència.
 - `npm run cf:dev` / `npm run deploy`: Worker de Cloudflare (Static Assets + API de la plantada del dia). **Per desplegar, segueix [DEPLOY.md](DEPLOY.md)** (cal crear la D1 i posar-ne el `database_id` a `wrangler.jsonc`).
 
 ## Arquitectura
@@ -44,7 +44,7 @@ Regla de dependències: `constants` ← `rules` ← `physics` ← `main`; `scene
 
 Estètiques: una estètica és un mòdul que rep el `GameScene` i en canvia geometria visual (`pinGeo`, `clubGeo`, `decoratePin`), materials (`pinMatFor`, `clubMatFor`, `ringMat`), pista (`laneFor`), llum (`sun`, `hemi`, `scene.environment`), terra (`ground`), efectes (`onKnockDown`, `afterSync`, `tickers`) i postprocessat (`post`). El realisme es carrega sempre a l'arrencada (`import()` a `main.ts`); no hi ha cap altra estètica seleccionable. Mai toquis regles ni física des d'una estètica.
 
-Paràmetres d'URL: `?escenari=vilanova|parc` (per defecte vilanova), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`.
+Paràmetres d'URL: `?escenari=vilanova|parc` (per defecte vilanova), `?q=baixa` (sense postprocessat, ombres i còdols reduïts), `?fps` (comptador de rendiment per provar en mòbils reals), `?tutorial=N`. Només per a proves: `?proves` (no carrega el realisme).
 
 ## Reglament (resum, FCBB 2010)
 

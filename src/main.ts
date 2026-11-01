@@ -729,10 +729,13 @@ async function boot() {
   scene = new GameScene(canvas);
   // Estètica única: realisme. ?q=baixa per a mòbils modestos (sense postprocessat, ombres i còdols reduïts).
   const params0 = new URLSearchParams(location.search);
-  $('loading').textContent = 'Carregant la plaça…';
-  const { applyRealisme } = await import('./game/look-realisme');
-  const escenari = params0.get('escenari') === 'parc' ? 'parc' : 'vilanova';
-  await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta', escenari);
+  // `?proves`: només per a proves automàtiques (render per programari); no carrega el realisme. No és una opció de joc.
+  if (!params0.has('proves')) {
+    $('loading').textContent = 'Carregant la plaça…';
+    const { applyRealisme } = await import('./game/look-realisme');
+    const escenari = params0.get('escenari') === 'parc' ? 'parc' : 'vilanova';
+    await applyRealisme(scene, params0.get('q') === 'baixa' ? 'baixa' : 'alta', escenari);
+  }
   if (params0.has('fps')) startFps();
   const resize = () => { scene.resize(stage.clientWidth, stage.clientHeight); fx.resize(stage.clientWidth, stage.clientHeight); };
   addEventListener('resize', resize);
