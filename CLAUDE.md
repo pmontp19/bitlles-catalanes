@@ -24,9 +24,13 @@ src/game/look-realisme.ts  Estètica realista: HDR, PBR, fons fotogràfic, còdo
 src/game/escenari-vilanova.ts  Decorat modelat de la pista de Vilanova (tanca, fanals, pèrgola, pistes veïnes).
 public/realisme/       Recursos CC0 (Poly Haven). Vegeu LLICENCIES.md abans d'afegir-ne.
 docs/referencies/      Fotos reals (Wikimedia Commons) amb autoria i llicència. Consulta-les abans de tocar formes o materials. No s'empaqueten.
-src/game/tutorial.ts   Lliçons (dades + funció `check`).
+src/game/tutorial.ts   "Aprèn a jugar": lliçons de MECÀNICA (controls i sistemes propis del joc). Dades + `check`.
+src/game/regles.ts     "Les regles del joc": llibret del reglament real (pàgines) i qüestionari determinista.
+src/game/art.ts        Il·lustracions SVG (bitlla, bitllot, plantada, angle, pista, fitxa tècnica) i icones del HUD.
 src/game/feedback.ts   So i vibració. Punt únic per canviar-ho per Haptics natiu (Capacitor).
-src/main.ts            Màquina d'estats de la sessió (menú, tutorial, partida, diària) i HUD.
+src/main.ts            Màquina d'estats (menú, tutorial, regles, qüestionari, partida, diària, acta) i HUD.
+src/style.css          Interfície esqueuomòrfica: fusta, paper, pissarra, placa esmaltada, segell, llautó.
+public/fonts/          Zilla Slab (rètols), Caveat (mà/guix), Source Serif 4 (llibret). OFL, allotjades al joc.
 src/worker/index.ts    Worker de Cloudflare.
 ```
 
@@ -46,6 +50,16 @@ Paràmetres d'URL: `?estil=gris|realisme` (per defecte realisme), `?escenari=vil
 - Partida: 9 tirades, 3 rondes de 3.
 
 Mecàniques afegides (no són del reglament): pubilla (bitlla d'or ×2), bitllots estalviats (+×0,5 per bitllot a la tirada següent), tipus de bitllot, vent a la plantada del dia, càmera lenta a prop dels 45°.
+
+## Tutorial i regles: no els barregis
+
+- **Aprèn a jugar** (`tutorial.ts`) ensenya a *controlar* el joc: gest, punteria, efecte, bastidor, i les mecàniques pròpies (pubilla, tria 3 de 4, bitllots estalviats). Cada lliçó és una tirada amb objectiu.
+- **Les regles del joc** (`regles.ts`) expliquen el *reglament real*: material, plantada, tirada, distàncies, puntuació, 45°, partida. Llibret + qüestionari.
+- Si una lliçó necessita una regla, en dona una línia i remet al llibret; no la torna a explicar.
+
+## Interfície
+
+Cada targeta és un material (`card(html, botons, variant)`): `board` (rètol de fusta, menú), `note` (nota clavada, lliçons), `book` (llibret), `acta` (full de partida), `paper`. Botons: `.btn` (placa de fusta), `.btn.primary` (placa esmaltada verda), `.btn.flat` (enllaç). Resultats amb `.stamp` (segell de tinta). Textures només amb CSS/SVG; res d'imatges.
 
 ## Convencions
 

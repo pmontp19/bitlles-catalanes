@@ -4,6 +4,8 @@ import { GameScene } from './game/scene';
 import { SwipeInput } from './game/input';
 import { cheer, knock, unlockAudio, vibrate } from './game/feedback';
 import { LESSONS, type Lesson } from './game/tutorial';
+import { PAGINES, questionari, type Pregunta } from './game/regles';
+import { clubIcon, pinIcon } from './game/art';
 import {
   ALL_BITLLOTS, BITLLOTS, newPartida, partidaScore, planFromSeed, pushResult, rondaOf, scoreTirada, shareText, tiradaOver,
   TOTAL_TIRADES, type BitllotKind, type DailyPlan, type Partida, type TiradaResult,
@@ -26,7 +28,7 @@ const store = {
 };
 
 // ---------- Estat ----------
-type Mode = 'tutorial' | 'partida' | 'daily';
+type Mode = 'tutorial' | 'partida' | 'daily' | 'regles';
 type Phase = 'menu' | 'card' | 'aim' | 'flight' | 'result' | 'end';
 
 let scene: GameScene;
@@ -59,20 +61,28 @@ const S = {
 const distanceFor = () => (S.mode === 'tutorial' ? LESSONS[S.lesson].distance : THROW_DISTANCE.infantil);
 
 // ---------- Overlay (targetes) ----------
-function card(html: string, buttons: { label: string; primary?: boolean; onClick: () => void }[]) {
+type Btn = { label: string; sub?: string; primary?: boolean; flat?: boolean; onClick: () => void };
+type Variant = 'paper' | 'note' | 'book' | 'acta' | 'board';
+
+function button(b: Btn) {
+  const el = document.createElement('button');
+  el.className = `btn ${b.primary ? 'primary' : ''} ${b.flat ? 'flat' : ''}`;
+  el.innerHTML = `${b.label}${b.sub ? `<small>${b.sub}</small>` : ''}`;
+  el.addEventListener('click', () => { unlockAudio(); b.onClick(); });
+  return el;
+}
+
+/** Targeta sobre l'escena. Cada variant és un material: paper, nota clavada, llibret, acta o rètol de fusta. */
+function card(html: string, buttons: Btn[], variant: Variant = 'paper') {
   S.phase = S.phase === 'end' ? 'end' : 'card';
   swipe.enabled = false;
-  overlay.innerHTML = `<div class="card">${html}<div class="actions"></div></div>`;
-  const actions = overlay.querySelector('.actions')!;
-  for (const b of buttons) {
-    const el = document.createElement('button');
-    el.textContent = b.label;
-    el.className = b.primary ? 'primary' : '';
-    el.addEventListener('click', () => { unlockAudio(); b.onClick(); });
-    actions.appendChild(el);
-  }
+  const cls = variant === 'board' ? 'card board' : `card paper ${variant}`;
+  overlay.innerHTML = `<div class="${cls}">${html}${buttons.length ? '<div class="actions"></div>' : ''}</div>`;
+  const actions = overlay.querySelector('.actions');
+  for (const b of buttons) actions?.appendChild(button(b));
   overlay.hidden = false;
-  (actions.querySelector('button.primary') as HTMLButtonElement | null)?.focus();
+  overlay.scrollTop = 0;
+  (overlay.querySelector('button.primary') as HTMLButtonElement | null)?.focus({ preventScroll: true });
 }
 function closeCard() { overlay.hidden = true; overlay.innerHTML = ''; }
 
@@ -81,18 +91,89 @@ function menu() {
   S.phase = 'menu';
   hud.root.hidden = true;
   const done = store.get('tutorial-fet') === '1';
+  const regles = store.get('regles-fet') === '1';
   const best = Number(store.get('millor') ?? 0);
   card(
-    `<h1 class="logo">Bitlla!</h1>
-     <p class="sub">Bitlles catalanes · prototip</p>
-     <p class="small">Tomba'n cinc i deixa'n una dreta: val 10 punts. Totes sis, només 6.</p>
-     ${best ? `<p class="small">Millor partida: <b>${best}</b> punts</p>` : ''}`,
-    [
-      { label: done ? 'Tutorial' : 'Comença pel tutorial', primary: !done, onClick: () => startTutorial(0) },
-      { label: 'Partida ràpida', primary: done, onClick: () => startPartida('partida') },
-      { label: 'Plantada del dia', onClick: () => void startDaily() },
-    ],
+    `<div class="board-sign wood"><h1 class="logo">Bitlla!</h1><div class="board-sub">Bitlles catalanes</div></div>
+     <div class="board-paper paper">
+       <p class="tagline">Tomba'n cinc i deixa'n una dreta.</p>
+       <div class="actions" id="menu-actions"></div>
+       ${best ? `<p class="best">Millor partida: ${best} punts</p>` : ''}
+     </div>`,
+    [],
+    'board',
   );
+  const actions = $('menu-actions');
+  const items: Btn[] = [
+    { label: 'Aprèn a jugar', sub: done ? 'Controls i mecàniques' : 'Comença per aquí: 7 lliçons curtes', primary: !done, onClick: () => startTutorial(0) },
+    { label: 'Les regles del joc', sub: regles ? 'El reglament de les bitlles catalanes' : 'El reglament real, il·lustrat', onClick: () => showRegles(0) },
+    { label: 'Partida ràpida', sub: '9 tirades a 9,5 m', primary: done, onClick: () => startPartida('partida') },
+    { label: 'Plantada del dia', sub: 'La mateixa per a tothom', onClick: () => void startDaily() },
+  ];
+  for (const b of items) actions.appendChild(button(b));
+}
+
+// ---------- Les regles del joc (reglament) ----------
+function bookHtml(head: string, body: string, page: number, total: number) {
+  return `<div class="book-head"><span>Reglament de joc</span><span>${head}</span></div>
+    <div class="book-body">${body}</div>
+    <div class="book-foot"><span id="bk-prev"></span><div class="dots">${Array.from({ length: total }, (_, i) => `<i class="${i === page ? 'on' : ''}"></i>`).join('')}</div><span id="bk-next"></span></div>`;
+}
+
+function showRegles(page: number) {
+  S.mode = 'regles';
+  hud.root.hidden = true;
+  const p = PAGINES[page];
+  card(bookHtml(`pàg. ${page + 1} de ${PAGINES.length}`, `<h2>${p.title}</h2>${p.html}`, page, PAGINES.length), [], 'book');
+  $('bk-prev').appendChild(button(page === 0 ? { label: 'Menú', onClick: menu } : { label: '‹ Enrere', onClick: () => showRegles(page - 1) }));
+  $('bk-next').appendChild(button(page + 1 < PAGINES.length
+    ? { label: 'Endavant ›', primary: true, onClick: () => showRegles(page + 1) }
+    : { label: 'Posa\'t a prova', primary: true, onClick: () => startQuiz() }));
+}
+
+function startQuiz() {
+  const qs = questionari((Math.random() * 2 ** 31) | 0);
+  showPregunta(qs, 0, 0);
+}
+
+function showPregunta(qs: Pregunta[], i: number, encerts: number) {
+  if (i >= qs.length) return quizDone(encerts, qs.length);
+  const q = qs[i];
+  card(bookHtml(`pregunta ${i + 1} de ${qs.length}`, `${q.html}<div class="tickets" id="tickets"></div><p class="why" id="why" hidden></p>`, i, qs.length), [], 'book');
+  $('bk-prev').appendChild(button({ label: 'Llibret', onClick: () => showRegles(0) }));
+  const tickets = $('tickets');
+  let answered = false;
+  q.options.forEach((o, k) => {
+    const t = document.createElement('button');
+    t.className = 'ticket';
+    t.textContent = o;
+    t.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
+      const ok = k === q.correct;
+      t.classList.add(ok ? 'ok' : 'ko');
+      tickets.children[q.correct].classList.add('ok');
+      const why = $('why');
+      why.hidden = false;
+      why.textContent = `${ok ? 'Correcte! ' : ''}${q.why}`;
+      if (ok) { cheer(false); vibrate(15); } else vibrate([30, 40, 30]);
+      $('bk-next').appendChild(button({ label: i + 1 < qs.length ? 'Següent ›' : 'Resultat ›', primary: true, onClick: () => showPregunta(qs, i + 1, encerts + (ok ? 1 : 0)) }));
+    });
+    tickets.appendChild(t);
+  });
+}
+
+function quizDone(encerts: number, total: number) {
+  const aprovat = encerts >= total - 1;
+  if (aprovat) store.set('regles-fet', '1');
+  card(`<div class="step">Les regles del joc</div>
+    <div style="text-align:center;padding:10px 0"><span class="stamp ${aprovat ? 'green' : ''}">${aprovat ? 'Aprovat' : 'Torna-hi'}</span></div>
+    <p style="text-align:center">${encerts} de ${total} respostes correctes.</p>
+    <p class="small" style="text-align:center">${aprovat ? 'Ja saps com puntua una tirada de debò.' : 'Fes un cop d\'ull al llibret i torna-ho a provar.'}</p>`, [
+    { label: aprovat ? 'Juga una partida' : 'Torna-hi', primary: true, onClick: () => (aprovat ? startPartida('partida') : startQuiz()) },
+    { label: 'Llibret de regles', onClick: () => showRegles(0) },
+    { label: 'Menú', flat: true, onClick: menu },
+  ]);
 }
 
 // ---------- Tutorial ----------
@@ -101,18 +182,17 @@ function startTutorial(i: number) {
   S.lesson = i;
   const L = LESSONS[i];
   if (!L) { store.set('tutorial-fet', '1'); return tutorialDone(); }
-  const step = `<div class="step">Lliçó ${i + 1} de ${LESSONS.length}</div>`;
+  const step = `<div class="step">Aprèn a jugar · lliçó ${i + 1} de ${LESSONS.length}</div>`;
   if (L.explainOnly) {
-    const art = L.explainOnly === 'tria' ? triaArt() : angleArt();
-    return card(`${step}<h2>${L.title}</h2>${art}<p>${L.intro}</p>`, [
+    return card(`${step}<h2>${L.title}</h2>${triaArt()}<p>${L.intro}</p>`, [
       { label: 'Continua', primary: true, onClick: () => startTutorial(i + 1) },
-      { label: 'Surt', onClick: menu },
-    ]);
+      { label: 'Surt', flat: true, onClick: menu },
+    ], 'note');
   }
   card(`${step}<h2>${L.title}</h2><p>${L.intro}</p><p class="goal-line">Objectiu: ${L.goal}</p>`, [
     { label: 'Som-hi', primary: true, onClick: () => { closeCard(); setupLesson(L); } },
-    { label: 'Salta el tutorial', onClick: () => { store.set('tutorial-fet', '1'); menu(); } },
-  ]);
+    { label: 'Salta el tutorial', flat: true, onClick: () => { store.set('tutorial-fet', '1'); menu(); } },
+  ], 'note');
 }
 
 function setupLesson(L: Lesson) {
@@ -126,40 +206,45 @@ function setupLesson(L: Lesson) {
   S.startDown = field.down();
   hud.goal.textContent = L.goal;
   hud.goal.hidden = false;
-  hud.tirada.textContent = `Tutorial · ${L.title}`;
+  hud.tirada.textContent = `Lliçó ${S.lesson + 1} · ${L.title}`;
   hud.score.textContent = '–';
+  hud.rack.classList.toggle('point', !!L.pointRack);
   toAim();
 }
 
 function lessonSettled() {
   const L = LESSONS[S.lesson];
   const down = field.down();
-  const ok = L.check({ down, startDown: S.startDown, pubilla: S.pubilla, inputs: S.inputs });
+  const ok = L.check({ down, startDown: S.startDown, pubilla: S.pubilla, inputs: S.inputs, kinds: S.used.map((i) => S.hand[i]) });
   const outOfClubs = S.used.length >= S.hand.length || down.filter(Boolean).length >= 5;
   if (ok) {
     cheer(true);
     vibrate([20, 40, 20]);
     S.phase = 'result';
-    setTimeout(() => card(`<h2>${L.success}</h2>`, [
+    hud.rack.classList.remove('point');
+    setTimeout(() => card(`<div style="text-align:center;padding:6px 0"><span class="stamp green">Fet!</span></div><h2>${L.success}</h2>`, [
       { label: S.lesson + 1 < LESSONS.length ? 'Següent lliçó' : 'Acaba', primary: true, onClick: () => startTutorial(S.lesson + 1) },
       { label: 'Repeteix', onClick: () => { closeCard(); setupLesson(L); } },
-    ]), 700);
+    ], 'note'), 700);
   } else if (outOfClubs) {
     S.phase = 'result';
     setTimeout(() => card(`<h2>Gairebé</h2><p>${L.fail}</p>`, [
       { label: 'Torna-hi', primary: true, onClick: () => { closeCard(); setupLesson(L); } },
-      { label: 'Salta aquesta lliçó', onClick: () => startTutorial(S.lesson + 1) },
-    ]), 700);
+      { label: 'Salta aquesta lliçó', flat: true, onClick: () => startTutorial(S.lesson + 1) },
+    ], 'note'), 700);
   } else {
     toAim();
   }
 }
 
 function tutorialDone() {
-  card(`<h2>Ja estàs a punt</h2><p>Una partida són 9 tirades en 3 rondes, com a la competició. Si fas bitlla amb el primer o el segon bitllot, els que no llances multipliquen la tirada següent.</p>`, [
+  const regles = store.get('regles-fet') === '1';
+  card(`<div style="text-align:center;padding:6px 0"><span class="stamp green">Après</span></div><h2>Ja saps jugar</h2>
+    <p>Ja domines el llançament, la punteria, l'efecte i els bitllots.${regles ? '' : ' Si vols saber com es puntua de debò i per què val més deixar-ne una, llegeix les regles.'}</p>`, [
     { label: 'Juga una partida', primary: true, onClick: () => startPartida('partida') },
-    { label: 'Menú', onClick: menu },
-  ]);
+    ...(regles ? [] : [{ label: 'Les regles del joc', onClick: () => showRegles(0) }]),
+    { label: 'Menú', flat: true, onClick: menu },
+  ], 'note');
 }
 
 // ---------- Partida i plantada del dia ----------
@@ -170,6 +255,7 @@ function startPartida(mode: 'partida' | 'daily', plan?: DailyPlan) {
   S.tirada = 0;
   S.ghost = null;
   hud.goal.hidden = true;
+  hud.rack.classList.remove('point');
   chooseBench();
 }
 
@@ -189,9 +275,9 @@ function chooseBench() {
   const ronda = rondaOf(S.tirada) + 1;
   const items = ALL_BITLLOTS.map((k) => {
     const b = BITLLOTS[k];
-    return `<button class="bitllot-pick" data-k="${k}"><i style="background:#${b.color.toString(16).padStart(6, '0')}"></i><b>${b.name}</b><span>${b.hint}</span></button>`;
+    return `<button class="bitllot-pick" data-k="${k}">${clubIcon(k, 96)}<b>${b.name}</b><span>${b.hint}</span></button>`;
   }).join('');
-  card(`<div class="step">Ronda ${ronda} de 3</div><h2>Quin deixes a la banqueta?</h2><p class="small">Portes 4 bitllots i en llances 3.</p><div class="picks">${items}</div>`, []);
+  card(`<div class="step">Ronda ${ronda} de 3</div><h2>Quin deixes a la banqueta?</h2><p class="small">Portes 4 bitllots i en llances 3.</p><div class="picks">${items}</div>`, [], 'note');
   overlay.querySelectorAll<HTMLButtonElement>('.bitllot-pick').forEach((b) => b.addEventListener('click', () => {
     unlockAudio();
     const bench = b.dataset.k as BitllotKind;
@@ -232,14 +318,15 @@ function tiradaSettled() {
 
 function showResult(r: TiradaResult) {
   const big = r.label === 'bitlla' || r.label === 'bitlla d\'or';
-  const title = r.label === 'bitlla d\'or' ? 'BITLLA D\'OR!' : r.label === 'bitlla' ? 'BITLLA!' : r.label === 'llenya' ? 'Llenya' : r.knocked === 0 ? 'Res' : `${r.knocked} ${r.knocked === 1 ? 'bitlla' : 'bitlles'}`;
+  const title = r.label === 'bitlla d\'or' ? 'Bitlla d\'or!' : r.label === 'bitlla' ? 'Bitlla!' : r.label === 'llenya' ? 'Llenya' : r.knocked === 0 ? 'Res' : `${r.knocked} ${r.knocked === 1 ? 'bitlla' : 'bitlles'}`;
   const extra = [
     `+${r.total}`,
     r.bitllaOr ? 'pubilla dreta ×2' : '',
     r.multiplier > 1 ? `×${r.multiplier} bitllots estalviats` : '',
     r.saved ? `${r.saved} estalviat${r.saved > 1 ? 's' : ''} → ×${1 + 0.5 * r.saved} a la següent` : '',
   ].filter(Boolean).join(' · ');
-  hud.toast.innerHTML = `<b>${title}</b><small>${extra}</small>`;
+  const tone = r.label === 'bitlla d\'or' ? 'gold' : big ? '' : r.label === 'llenya' ? 'green' : 'green';
+  hud.toast.innerHTML = `<span class="stamp ${tone}">${title}</span><small>${extra}</small>`;
   hud.toast.className = `toast show ${big ? 'big' : ''}`;
   if (big) { cheer(r.bitllaOr); vibrate([30, 60, 30, 60, 60]); }
 }
@@ -252,8 +339,13 @@ function endPartida() {
   const title = S.mode === 'daily' ? `Bitlla! ${S.dailyDate}` : 'Bitlla!';
   const text = shareText(S.partida, title);
   const bitlles = S.partida.results.filter((r) => r.knocked === 5).length;
-  card(`<div class="step">${S.mode === 'daily' ? 'Plantada del dia' : 'Partida acabada'}</div><h2 class="total">${total} <small>punts</small></h2>
-    <p class="small">${bitlles} bitlles de 9 tirades${total > best && best ? ' · nou rècord!' : ''}</p>
+  const cell = (r?: TiradaResult) => r
+    ? `<div class="cell ${r.knocked === 5 ? 'bitlla' : ''}">${r.total}<small>${r.label === 'bitlla d\'or' ? 'or' : r.label === 'bitlla' ? 'bitlla' : r.label === 'llenya' ? 'llenya' : `${r.knocked} tomb.`}</small></div>`
+    : '<div class="cell"></div>';
+  const rows = [0, 1, 2].map((rd) => `<div class="rh">Ronda ${rd + 1}</div>${[0, 1, 2].map((t) => cell(S.partida.results[rd * 3 + t])).join('')}`).join('');
+  card(`<div class="acta-head"><span>Acta de la partida</span><span>${S.mode === 'daily' ? S.dailyDate : 'Partida ràpida'}</span></div>
+    <div class="acta-grid">${rows}</div>
+    <div class="acta-total"><div><p class="small">${bitlles} bitlles de 9 tirades</p>${total > best && best ? '<span class="stamp gold" style="font-size:20px;margin-top:6px">Rècord</span>' : ''}</div><span class="num">${total}</span></div>
     <pre class="share" id="share-text">${text}</pre>`, [
     { label: 'Copia el resultat', primary: true, onClick: () => {
       navigator.clipboard?.writeText(text).then(() => { hud.hint.textContent = 'Copiat'; }).catch(() => {
@@ -261,8 +353,8 @@ function endPartida() {
       });
     } },
     { label: 'Torna a jugar', onClick: () => (S.mode === 'daily' ? void startDaily() : startPartida('partida')) },
-    { label: 'Menú', onClick: menu },
-  ]);
+    { label: 'Menú', flat: true, onClick: menu },
+  ], 'acta');
 }
 
 // ---------- Tirada (comú) ----------
@@ -302,7 +394,8 @@ function renderRack() {
     const b = BITLLOTS[k];
     const el = document.createElement('button');
     el.className = `club ${S.used.includes(i) ? 'used' : ''} ${i === S.selected ? 'sel' : ''}`;
-    el.innerHTML = `<i style="background:#${b.color.toString(16).padStart(6, '0')}"></i><span>${b.name}</span>`;
+    el.innerHTML = `${clubIcon(k, 70)}<span>${b.name}</span>`;
+    el.setAttribute('aria-label', `Bitllot ${b.name}${S.used.includes(i) ? ', ja llançat' : ''}`);
     el.disabled = S.used.includes(i) || S.phase !== 'aim';
     el.addEventListener('click', (e) => { e.stopPropagation(); S.selected = i; renderRack(); });
     el.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -312,7 +405,7 @@ function renderRack() {
 
 function renderPins() {
   const down = field.down();
-  hud.pins.innerHTML = down.map((d, i) => `<i class="${d ? 'down' : ''} ${i === S.pubilla ? 'pub' : ''}"></i>`).join('');
+  hud.pins.innerHTML = down.map((d, i) => pinIcon({ down: d, pubilla: i === S.pubilla, w: 13 })).join('');
 }
 
 swipe.onMove = (g) => {
@@ -349,21 +442,8 @@ swipe.onRelease = (input) => {
 
 // ---------- Il·lustracions del tutorial ----------
 function triaArt() {
-  return `<div class="picks small-picks">${ALL_BITLLOTS.map((k) => `<div class="bitllot-pick static"><i style="background:#${BITLLOTS[k].color.toString(16).padStart(6, '0')}"></i><b>${BITLLOTS[k].name}</b><span>${BITLLOTS[k].hint}</span></div>`).join('')}</div>`;
+  return `<div class="picks">${ALL_BITLLOTS.map((k) => `<div class="bitllot-pick static">${clubIcon(k, 84)}<b>${BITLLOTS[k].name}</b><span>${BITLLOTS[k].hint}</span></div>`).join('')}</div>`;
 }
-function angleArt() {
-  return `<svg class="art" viewBox="0 0 220 120" role="img" aria-label="Bitlla inclinada al límit de 45 graus">
-    <line x1="10" y1="110" x2="210" y2="110" stroke="currentColor" stroke-width="2"/>
-    <path d="M110 110 L180 40" stroke="var(--gold)" stroke-width="2" stroke-dasharray="5 4"/>
-    <path d="M150 110 A40 40 0 0 0 138.3 81.7" fill="none" stroke="var(--gold)" stroke-width="2"/>
-    <text x="156" y="98" fill="var(--gold)" font-size="13" font-weight="700">45°</text>
-    <g transform="rotate(-38 110 110)"><rect x="100" y="40" width="20" height="70" rx="8" fill="var(--pin)" stroke="currentColor"/></g>
-    <g transform="rotate(-58 110 110)" opacity=".45"><rect x="100" y="40" width="20" height="70" rx="8" fill="var(--danger)"/></g>
-    <text x="16" y="24" fill="currentColor" font-size="12">dreta: &gt; 45°</text>
-    <text x="16" y="42" fill="var(--danger)" font-size="12">tombada: &lt; 45°</text>
-  </svg>`;
-}
-
 // ---------- Bucle ----------
 function ghostPos(kind: NonNullable<Lesson['ghost']>, t: number, w: number, h: number) {
   const u = (t % 2.2) / 1.5;
@@ -421,7 +501,14 @@ function frame(now: number) {
       hud.prot.hidden = false;
       hud.prot.style.transform = `translate(${sp.x - 50}px, ${sp.y - 90}px)`;
       const a = tilts[wobble];
-      hud.prot.innerHTML = `<svg viewBox="0 0 100 100"><path d="M50 90 L50 20" stroke="#fff" stroke-width="1.5" opacity=".5"/><path d="M50 90 L99.5 40.5" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/><path d="M50 90 L${50 + 70 * Math.sin((a * Math.PI) / 180)} ${90 - 70 * Math.cos((a * Math.PI) / 180)}" stroke="${a > 45 ? 'var(--danger)' : '#fff'}" stroke-width="4" stroke-linecap="round"/></svg><b>${(90 - a).toFixed(0)}°</b>`;
+      // Transportador de llautó: semicercle graduat, línia vermella als 45° i agulla amb la inclinació.
+      const rad = (d: number) => (d * Math.PI) / 180;
+      const ticks = Array.from({ length: 19 }, (_, k) => { const d = k * 10, r0 = k % 3 === 0 ? 33 : 37; return `<line x1="${50 + 42 * Math.cos(rad(d))}" y1="${88 - 42 * Math.sin(rad(d))}" x2="${50 + r0 * Math.cos(rad(d))}" y2="${88 - r0 * Math.sin(rad(d))}" stroke="#5a4100" stroke-width="1"/>`; }).join('');
+      const g = 90 - a;
+      hud.prot.innerHTML = `<svg viewBox="0 0 100 100"><defs><linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc8a"/><stop offset=".6" stop-color="#c9a24a"/><stop offset="1" stop-color="#8a6a20"/></linearGradient></defs>
+        <path d="M6 88 A44 44 0 0 1 94 88 Z M24 88 A26 26 0 0 0 76 88 Z" fill="url(#brass)" fill-rule="evenodd" stroke="#5a4100" stroke-width="1"/>${ticks}
+        <line x1="50" y1="88" x2="${50 + 44 * Math.cos(rad(45))}" y2="${88 - 44 * Math.sin(rad(45))}" stroke="#b3302a" stroke-width="2"/>
+        <line x1="50" y1="88" x2="${50 + 46 * Math.cos(rad(g))}" y2="${88 - 46 * Math.sin(rad(g))}" stroke="${g < 45 ? '#b3302a' : '#2b2119'}" stroke-width="3.5" stroke-linecap="round"/><circle cx="50" cy="88" r="3" fill="#2b2119"/></svg><b>${g.toFixed(0)}°</b>`;
       if (Math.floor(S.t * 12) % 2 === 0) vibrate(4);
     } else hud.prot.hidden = true;
 
@@ -485,6 +572,6 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.has('tutorial')) startTutorial(Number(params.get('tutorial')) || 0);
   else menu();
-  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe, scene: () => scene };
+  (window as unknown as { __bitlla: unknown }).__bitlla = { S, field: () => field, swipe, scene: () => scene, endPartida };
 }
 void boot();

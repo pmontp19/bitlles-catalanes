@@ -18,7 +18,7 @@ require('fs').mkdirSync(OUT, { recursive: true });
   await p.goto(URL_ + '?tutorial=0' + Q); await p.waitForSelector('.card');
   await p.screenshot({ path: `${OUT}/01-leccio.png` });
   for (let i = 0; i < 12; i++) {
-    if (await p.$('text=Ja estàs a punt')) break;
+    if (await p.$('text=Ja saps jugar')) break;
     const btn = await p.$('button:has-text("Som-hi"), button:has-text("Continua")');
     if (!btn) throw new Error('tutorial encallat');
     const txt = await btn.textContent();

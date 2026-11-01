@@ -1,87 +1,237 @@
-/* UI en gris del prototip. L'estètica definitiva substituirà aquests tokens. */
+@import './fonts.css';
+
+/* Interfície amb un toc d'esqueuomorfisme: materials de debò del món de les bitlles.
+   Fusta (bastidor, rètols), paper (notes, llibret, acta), pissarra (marcador),
+   placa esmaltada verda (com la tanca de Vilanova), segell de tinta i llautó. Una sola aparença, clara. */
 :root {
-  --ink: #1f2523;
-  --paper: #f7f5f0;
-  --muted: #6c7370;
-  --gold: #f2b630;
+  --ink: #2b2119;
+  --ink-soft: #5b4a3a;
+  --paper: #f3e8d0;
+  --paper-2: #e6d5b1;
+  --paper-edge: #c9b086;
+  --wood: #b07a43;
+  --wood-dark: #5e3b1c;
+  --wood-light: #d9a86c;
+  --enamel: #1f6b47;
+  --enamel-hi: #2f8a5f;
+  --cream: #f6eedb;
+  --slate: #2c3631;
+  --chalk: #f3f0e6;
+  --red: #b3302a;
+  --gold: #f2b705;
+  --brass: #c9a24a;
   --danger: #e0533b;
-  --pin: #f4f1ea;
-  --glass: rgba(247, 245, 240, 0.92);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pin: #e6c08a;
+
+  --sign: 'Zilla Slab', Rockwell, 'Roboto Slab', Georgia, serif;
+  --hand: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --tex-paper: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .36  0 0 0 0 .26  0 0 0 0 .12  0 0 0 .13 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --tex-wood: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='120'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='.008 .28' numOctaves='3' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .22  0 0 0 0 .12  0 0 0 0 .04  0 0 0 .55 -.08'/></filter><rect width='100%' height='100%' filter='url(%23w)'/></svg>");
+  --tex-slate: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
   color-scheme: light;
 }
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #dfe3e6; color: var(--ink); font-family: var(--font); overscroll-behavior: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #cfc4ad; color: var(--ink); font-family: var(--ui); overscroll-behavior: none; }
 #stage { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
 #scene { width: 100%; height: 100%; display: block; }
 [hidden] { display: none !important; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; font: 600 26px var(--hand); color: var(--ink-soft); background: var(--tex-paper), var(--paper); }
 
-#loading { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; color: var(--muted); }
+/* ---------- Materials reutilitzables ---------- */
+.paper {
+  background: var(--tex-paper), linear-gradient(180deg, #f7eedb, #ecdcbb);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 0 0 1px rgba(120, 90, 50, .25), 0 2px 0 var(--paper-edge), 0 16px 34px rgba(40, 24, 8, .35);
+}
+.wood {
+  background: var(--tex-wood), linear-gradient(180deg, var(--wood-light), var(--wood) 45%, #96612f);
+  box-shadow: inset 0 1px 0 rgba(255, 228, 185, .55), inset 0 -2px 0 rgba(0, 0, 0, .28), 0 0 0 1px var(--wood-dark), 0 6px 14px rgba(0, 0, 0, .35);
+}
 
-#hud { position: absolute; inset: 0; pointer-events: none; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(14px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 14px) max(14px, env(safe-area-inset-left, 0px)); }
-.top { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 10px; }
-.score b { display: block; font-size: 40px; line-height: 0.9; font-weight: 900; font-variant-numeric: tabular-nums; }
-.score span { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+/* ---------- Botons: placa de fusta i placa esmaltada ---------- */
+.btn {
+  position: relative; display: block; width: 100%; padding: 13px 14px 12px;
+  font: 700 18px/1.1 var(--sign); letter-spacing: .01em; color: #3a220c; text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 232, 196, .6);
+  border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--tex-wood), linear-gradient(180deg, #e3b57b, #c58c50 55%, #a8703a);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 200, .7), inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 1px var(--wood-dark), 0 4px 0 #4f3114, 0 7px 12px rgba(0, 0, 0, .3);
+  transition: transform .06s, box-shadow .06s;
+}
+.btn:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 235, 200, .7), inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 1px var(--wood-dark), 0 1px 0 #4f3114, 0 3px 6px rgba(0, 0, 0, .3); }
+.btn.primary {
+  color: var(--cream); text-shadow: 0 -1px 0 rgba(0, 0, 0, .35);
+  background: radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, .28), transparent 55%), linear-gradient(180deg, var(--enamel-hi), var(--enamel));
+  box-shadow: inset 0 0 0 3px var(--enamel), inset 0 0 0 5px var(--cream), inset 0 -3px 0 rgba(0, 0, 0, .25), 0 0 0 1px #0f3a26, 0 4px 0 #0d3322, 0 7px 12px rgba(0, 0, 0, .3);
+}
+.btn.primary:active { transform: translateY(3px); box-shadow: inset 0 0 0 3px var(--enamel), inset 0 0 0 5px var(--cream), 0 0 0 1px #0f3a26, 0 1px 0 #0d3322, 0 3px 6px rgba(0, 0, 0, .3); }
+.btn small { display: block; margin-top: 3px; font: 500 13px var(--ui); letter-spacing: 0; opacity: .8; text-shadow: none; }
+.btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn.flat { background: transparent; box-shadow: none; text-decoration: underline; font-size: 15px; padding: 8px; color: var(--ink-soft); text-shadow: none; }
+.btn.flat:active { transform: none; }
+
+/* ---------- Capa de targetes ---------- */
+#overlay { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(30, 20, 10, .15), rgba(30, 20, 10, .55)); padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.card { width: min(420px, 100%); padding: 22px 20px 20px; display: grid; gap: 12px; }
+.card h2 { margin: 0; font: 700 28px/1.05 var(--sign); text-wrap: balance; }
+.card p { margin: 0; font: 400 17px/1.45 var(--serif); }
+.card .small { font-size: 15px; color: var(--ink-soft); }
+.card .step { font: 700 12px var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--red); }
+.card .goal-line { font: 700 24px/1.15 var(--hand); color: var(--ink); }
+.actions { display: grid; gap: 12px; margin-top: 6px; }
+
+/* Nota clavada amb xinxeta (lliçons). */
+.card.note { position: relative; transform: rotate(-.6deg); }
+.card.note::before { content: ''; position: absolute; top: -9px; left: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff8b7b, var(--red) 55%, #6e1712); box-shadow: 0 3px 4px rgba(0, 0, 0, .35); }
+
+/* Rètol de fusta del menú. */
+.card.board { padding: 0; gap: 0; background: none; box-shadow: none; }
+.board-sign { position: relative; padding: 22px 18px 18px; border-radius: 12px; text-align: center; }
+.board-sign::before, .board-sign::after { content: ''; position: absolute; top: 10px; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e9e2d0, #8b8371 60%, #4a4436); box-shadow: 0 1px 0 rgba(255, 255, 255, .3); }
+.board-sign::before { left: 10px; }
+.board-sign::after { right: 10px; }
+.logo { margin: 0; font: 700 68px/0.9 var(--sign); letter-spacing: -.02em; color: var(--cream); text-shadow: 0 -1px 0 rgba(0, 0, 0, .5), 0 2px 0 rgba(255, 220, 170, .35); }
+.board-sub { margin-top: 6px; font: 600 15px var(--sign); letter-spacing: .18em; text-transform: uppercase; color: #f1d9b0; text-shadow: 0 -1px 0 rgba(0, 0, 0, .45); }
+.board-paper { margin: -6px 12px 0; padding: 18px 16px 16px; display: grid; gap: 12px; }
+.board-paper .tagline { font: 600 23px/1.15 var(--hand); text-align: center; color: var(--ink); }
+.board-paper .best { text-align: center; font: 600 14px var(--ui); color: var(--ink-soft); }
+
+/* ---------- Llibret de regles ---------- */
+.card.book { padding: 0; gap: 0; overflow: hidden; border-radius: 3px 8px 8px 3px; }
+.book-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 18px 8px; border-bottom: 2px solid var(--red); font: 700 11px var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--red); }
+.book-body { padding: 16px 18px 6px; display: grid; gap: 12px; min-height: 360px; align-content: start; background: linear-gradient(90deg, rgba(90, 60, 20, .16), transparent 18px); }
+.book-body h2 { font-size: 30px; }
+.book-body p { font-size: 16.5px; }
+.book-body .nota { font: 600 20px/1.2 var(--hand); color: var(--ink-soft); }
+.book-foot { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; padding: 10px 14px 14px; }
+.book-foot .btn { padding: 9px 10px; font-size: 15px; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--paper-edge); }
+.dots i.on { background: var(--red); }
+.art { display: block; width: 100%; max-width: 260px; justify-self: center; color: var(--ink); }
+.art.wide { max-width: 320px; }
+.taula { border-collapse: collapse; width: 100%; font: 400 16px var(--serif); font-variant-numeric: tabular-nums; }
+.taula th { text-align: left; font: 700 11px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); border-bottom: 1.5px solid var(--ink); padding: 4px 6px; }
+.taula td { padding: 5px 6px; border-bottom: 1px dotted var(--paper-edge); }
+.taula td:last-child { text-align: right; font-weight: 600; }
+.taula tr.destacat td { color: var(--red); font-weight: 700; }
+.rondes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rondes div { border: 1.5px solid var(--ink); border-radius: 4px; padding: 6px; text-align: center; font: 600 13px var(--ui); }
+.rondes span { display: flex; justify-content: center; gap: 4px; margin-top: 5px; }
+.rondes i { font: 700 20px var(--hand); font-style: normal; width: 24px; border-bottom: 1px solid var(--ink-soft); }
+
+/* Qüestionari: tiquets de paper perforats. */
+.tickets { display: grid; gap: 9px; }
+.ticket { position: relative; padding: 11px 16px; text-align: left; font: 600 16px var(--serif); color: var(--ink); border: 0; border-radius: 3px; cursor: pointer;
+  background: radial-gradient(circle at 0 50%, transparent 7px, #fbf4e3 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #fbf4e3 7.5px) right / 51% 100% no-repeat;
+  filter: drop-shadow(0 1px 0 var(--paper-edge)) drop-shadow(0 3px 4px rgba(60, 40, 10, .22)); }
+.ticket:active { transform: translateY(1px); }
+.ticket:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.ticket.ok { background: radial-gradient(circle at 0 50%, transparent 7px, #d9ecd8 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #d9ecd8 7.5px) right / 51% 100% no-repeat; }
+.ticket.ko { background: radial-gradient(circle at 0 50%, transparent 7px, #f3d2cc 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #f3d2cc 7.5px) right / 51% 100% no-repeat; text-decoration: line-through; }
+.why { font: 600 20px/1.2 var(--hand) !important; color: var(--ink-soft); }
+
+/* ---------- Segell de tinta ---------- */
+.stamp { display: inline-block; padding: 6px 14px 4px; font: 700 34px/1 var(--sign); letter-spacing: .06em; text-transform: uppercase; color: var(--red); border: 4px double var(--red); border-radius: 6px; transform: rotate(-7deg); opacity: .88;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>"); }
+.stamp.green { color: var(--enamel); border-color: var(--enamel); }
+.stamp.gold { color: #a87a00; border-color: #a87a00; }
+
+/* ---------- Acta de la partida ---------- */
+.card.acta { gap: 10px; background: var(--tex-paper), repeating-linear-gradient(180deg, transparent 0 27px, rgba(60, 100, 160, .22) 27px 28px), linear-gradient(180deg, #f9f2e2, #efe2c6); }
+.acta-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 6px; font: 700 13px var(--ui); letter-spacing: .14em; text-transform: uppercase; }
+.acta-grid { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 0; border: 1.5px solid var(--ink); }
+.acta-grid > * { padding: 4px 6px; border-right: 1px solid var(--ink-soft); border-bottom: 1px solid var(--ink-soft); min-height: 38px; display: grid; align-items: center; }
+.acta-grid .rh { font: 700 12px var(--ui); letter-spacing: .08em; text-transform: uppercase; background: rgba(120, 90, 40, .08); }
+.acta-grid .cell { font: 700 26px/1 var(--hand); text-align: center; position: relative; }
+.acta-grid .cell small { font: 600 11px var(--ui); color: var(--ink-soft); }
+.acta-grid .cell.bitlla { color: var(--red); }
+.acta-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.acta-total .num { font: 700 64px/1 var(--hand); padding: 2px 18px; border: 2.5px solid var(--red); border-radius: 50% 46% 52% 48% / 55% 50% 48% 45%; color: var(--ink); }
+.share { margin: 0; padding: 10px 12px; font: 15px/1.4 ui-monospace, 'Courier New', monospace; white-space: pre-wrap; user-select: text; -webkit-user-select: text; background: rgba(255, 255, 255, .5); border: 1px dashed var(--paper-edge); }
+
+/* Tria 3 de 4: bitllots damunt d'un drap. */
+.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bitllot-pick { display: grid; justify-items: center; gap: 4px; padding: 10px 8px; text-align: center; border: 0; border-radius: 6px; cursor: pointer; font: 14px var(--serif); color: var(--ink);
+  background: var(--tex-paper), #fbf4e3; box-shadow: 0 0 0 1px var(--paper-edge), 0 3px 0 var(--paper-edge), 0 6px 10px rgba(60, 40, 10, .18); }
+.bitllot-pick b { font: 700 17px var(--sign); }
+.bitllot-pick span { font-size: 13px; color: var(--ink-soft); line-height: 1.25; }
+button.bitllot-pick:active { transform: translateY(2px); }
+button.bitllot-pick:focus-visible { outline: 3px solid var(--gold); }
+.bitllot-pick.static { cursor: default; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; padding: calc(env(safe-area-inset-top, 0px) + 12px) max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px)); }
+.top { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 8px; }
+/* Marcador: pissarra amb marc de fusta. */
+.score { min-width: 74px; padding: 4px 10px 6px; text-align: center; border-radius: 4px; color: var(--chalk);
+  background: var(--tex-slate), radial-gradient(ellipse at 40% 30%, #3c4a43, var(--slate));
+  box-shadow: inset 0 0 0 5px #8a5a2b, inset 0 0 0 6px #4f3114, inset 0 0 14px 6px rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .35); }
+.score b { display: block; padding-top: 6px; font: 700 42px/0.9 var(--hand); font-variant-numeric: tabular-nums; text-shadow: 0 0 1px rgba(255, 255, 255, .6); }
+.score span { font: 600 15px var(--hand); letter-spacing: .06em; opacity: .85; }
 .mid { text-align: center; display: grid; gap: 6px; justify-items: center; }
-.tirada { font-size: 13px; font-weight: 700; background: var(--glass); padding: 4px 10px; border-radius: 99px; }
+/* Etiqueta de cartró lligada amb cordill. */
+.tirada { position: relative; padding: 5px 12px 5px 22px; font: 700 14px var(--sign); color: var(--ink); clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+  background: var(--tex-paper), linear-gradient(180deg, #f1e2c0, #e3cd9f); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .3)); }
+.tirada::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #8a6a3a; box-shadow: inset 0 1px 1px rgba(0, 0, 0, .5); }
 .chips { display: flex; gap: 6px; }
-.chip { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: var(--ink); color: var(--paper); }
-.chip.gold { background: var(--gold); color: var(--ink); }
-.pins { display: grid; grid-template-columns: repeat(3, 10px); gap: 4px 5px; direction: ltr; }
-.pins i { width: 10px; height: 22px; border-radius: 5px 5px 3px 3px; background: var(--pin); border: 1.5px solid var(--ink); }
-.pins i.down { opacity: 0.25; background: var(--ink); }
-.pins i.pub { background: var(--gold); }
-.pins i.pub.down { background: var(--danger); opacity: 0.6; }
-/* La filera del darrere (3,4,5) es dibuixa a dalt, com es veu des del tirador. */
-.pins i:nth-child(1), .pins i:nth-child(2), .pins i:nth-child(3) { grid-row: 2; }
-.pins i:nth-child(4), .pins i:nth-child(5), .pins i:nth-child(6) { grid-row: 1; }
+/* Moneda de llautó (multiplicador) i banderola de roba (vent). */
+.chip { font: 700 14px var(--sign); padding: 4px 9px; border-radius: 3px; color: var(--ink); background: var(--tex-paper), #efe4c8; box-shadow: 0 2px 3px rgba(0, 0, 0, .3); }
+.chip.gold { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #5a4100; text-shadow: 0 1px 0 rgba(255, 245, 200, .7);
+  background: radial-gradient(circle at 35% 30%, #fff1b8, var(--gold) 45%, #a87a00); box-shadow: inset 0 0 0 2px rgba(120, 80, 0, .5), inset 0 0 0 4px rgba(255, 230, 140, .6), 0 3px 5px rgba(0, 0, 0, .35); }
+/* Bitlles en miniatura sobre una tauleta. */
+.pins { display: grid; grid-template-columns: repeat(3, 14px); gap: 2px 6px; padding: 6px 8px 5px; border-radius: 5px; justify-items: center; }
+.pins .pin-ico { display: block; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .3)); }
+.pins .pin-ico.down { opacity: .35; transform: rotate(70deg) translate(6px, 4px) scale(.9); }
+.pins > :nth-child(1), .pins > :nth-child(2), .pins > :nth-child(3) { grid-row: 2; }
+.pins > :nth-child(4), .pins > :nth-child(5), .pins > :nth-child(6) { grid-row: 1; }
 
-.goal { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 14px; max-width: calc(100% - 28px); text-align: center; }
-.hint { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); text-align: center; font-weight: 700; color: var(--ink); opacity: 0.75; font-size: 15px; animation: breathe 2s ease-in-out infinite; }
-.readout { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); text-align: center; font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
-@keyframes breathe { 50% { opacity: 0.35; } }
+/* Objectiu: tira de paper enganxada amb cinta. */
+.goal { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 96px); left: 50%; transform: translateX(-50%) rotate(-1deg); max-width: calc(100% - 40px); padding: 8px 16px 6px; text-align: center; font: 700 22px/1.1 var(--hand); color: var(--ink);
+  background: var(--tex-paper), #fbf3df; box-shadow: 0 3px 6px rgba(0, 0, 0, .3); }
+.goal::before, .goal::after { content: ''; position: absolute; top: -8px; width: 46px; height: 18px; background: rgba(236, 222, 180, .75); box-shadow: 0 1px 1px rgba(0, 0, 0, .15); }
+.goal::before { left: -12px; transform: rotate(-30deg); }
+.goal::after { right: -12px; transform: rotate(30deg); }
 
-.rack { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); display: flex; justify-content: center; gap: 8px; pointer-events: auto; }
-.club { display: grid; justify-items: center; gap: 4px; min-width: 64px; padding: 8px 8px 6px; border-radius: 12px; border: 2px solid transparent; background: var(--glass); font: 700 11px var(--font); color: var(--ink); }
-.club i { width: 12px; height: 30px; border-radius: 6px 6px 3px 3px; display: block; }
-.club.sel { border-color: var(--ink); }
-.club.used { opacity: 0.3; }
-.club:focus-visible { outline: 3px solid var(--gold); }
+.hint, .readout { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); text-align: center; color: #fffaf0; text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 8px rgba(0, 0, 0, .5); }
+.hint { font: 700 25px var(--hand); animation: breathe 2.2s ease-in-out infinite; }
+.readout { font: 700 22px var(--hand); font-variant-numeric: tabular-nums; }
+@keyframes breathe { 50% { opacity: .5; } }
 
-.toast { position: absolute; left: 0; right: 0; top: 30%; text-align: center; opacity: 0; transform: scale(0.8); transition: opacity 0.2s, transform 0.25s cubic-bezier(.2,1.6,.4,1); }
+/* Bastidor de fusta amb els bitllots. */
+.rack { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; gap: 6px; padding: 8px 10px 10px; border-radius: 10px; pointer-events: auto; }
+.club { position: relative; display: grid; justify-items: center; gap: 2px; width: 82px; padding: 8px 4px 5px; border: 0; border-radius: 6px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, .12)); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 220, 170, .35); transition: transform .12s; }
+.club span { font: 700 12px var(--sign); color: #fbe7c4; text-shadow: 0 -1px 0 rgba(0, 0, 0, .6); }
+.club .club-ico { filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .45)); transition: transform .15s; }
+.club.sel .club-ico { transform: translateY(-5px) rotate(-4deg); }
+.club.sel::after { content: ''; position: absolute; top: -6px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--gold); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
+.club.used { opacity: .35; }
+.club.used .club-ico { transform: rotate(8deg) translateY(4px); }
+.club:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.rack.point { animation: point 1.2s ease-in-out infinite; }
+@keyframes point { 50% { box-shadow: inset 0 1px 0 rgba(255, 228, 185, .55), 0 0 0 1px var(--wood-dark), 0 0 0 6px rgba(242, 183, 5, .65), 0 6px 14px rgba(0, 0, 0, .35); } }
+
+/* Resultat: segell de tinta sobre la pantalla. */
+.toast { position: absolute; left: 0; right: 0; top: 28%; display: grid; justify-items: center; gap: 8px; opacity: 0; transform: scale(1.6); transition: opacity .12s, transform .22s cubic-bezier(.3, 1.5, .5, 1); }
 .toast.show { opacity: 1; transform: scale(1); }
-.toast b { display: block; font-size: 44px; font-weight: 900; letter-spacing: -0.02em; text-shadow: 0 2px 0 var(--paper); }
-.toast.big b { font-size: 64px; color: var(--ink); text-shadow: 0 3px 0 var(--gold); }
-.toast small { display: inline-block; margin-top: 6px; font-weight: 700; font-size: 13px; background: var(--glass); padding: 4px 10px; border-radius: 99px; }
+.toast .stamp { font-size: 40px; background: rgba(250, 244, 230, .82); }
+.toast.big .stamp { font-size: 56px; }
+.toast small { font: 700 21px/1.15 var(--hand); color: #fffaf0; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); max-width: 90%; text-align: center; }
 
-.prot { position: absolute; left: 0; top: 0; width: 100px; height: 100px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+/* Transportador de llautó. */
+.prot { position: absolute; left: 0; top: 0; width: 110px; height: 110px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
 .prot svg { width: 100%; height: 100%; }
-.prot b { position: absolute; top: -18px; left: 0; right: 0; text-align: center; color: #fff; font-size: 18px; font-weight: 900; }
+.prot b { position: absolute; top: -22px; left: 0; right: 0; text-align: center; color: #fffaf0; font: 700 26px var(--hand); text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
 
-.ghost { position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-radius: 50%; background: rgba(242,182,48,.55); border: 3px solid var(--ink); box-shadow: 0 0 0 6px rgba(247,245,240,.6); }
+/* Dit fantasma (tutorial): marca de guix. */
+.ghost { position: absolute; left: 0; top: 0; width: 46px; height: 46px; border-radius: 50%; border: 3px dashed rgba(255, 250, 235, .95); background: radial-gradient(circle, rgba(242, 183, 5, .55), rgba(242, 183, 5, .15) 70%); box-shadow: 0 0 0 4px rgba(0, 0, 0, .15); }
 
-#overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(31,37,35,.35); padding: 16px; overflow-y: auto; }
-.card { width: min(420px, 100%); background: var(--paper); border-radius: 18px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.25); display: grid; gap: 10px; }
-.card h1.logo { margin: 0; font-size: 64px; font-weight: 900; letter-spacing: -0.03em; line-height: 0.9; }
-.card h2 { margin: 0; font-size: 26px; line-height: 1.1; text-wrap: balance; }
-.card h2.total { font-size: 56px; font-weight: 900; }
-.card h2.total small { font-size: 18px; color: var(--muted); }
-.card p { margin: 0; line-height: 1.45; }
-.card .sub { color: var(--muted); font-weight: 600; }
-.card .small { font-size: 14px; color: var(--muted); }
-.card .step { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.card .goal-line { font-weight: 800; }
-.actions { display: grid; gap: 8px; margin-top: 6px; }
-.actions button { font: 700 16px var(--font); padding: 13px; border-radius: 12px; border: 2px solid var(--ink); background: transparent; color: var(--ink); }
-.actions button.primary { background: var(--ink); color: var(--paper); }
-.actions button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.bitllot-pick { display: grid; grid-template-columns: 14px 1fr; gap: 2px 10px; text-align: left; padding: 10px; border-radius: 12px; border: 2px solid #d9d5cc; background: #fff; font: 13px/1.3 var(--font); color: var(--ink); }
-.bitllot-pick i { grid-row: span 2; width: 12px; height: 34px; border-radius: 6px 6px 3px 3px; }
-.bitllot-pick b { font-size: 14px; }
-.bitllot-pick span { color: var(--muted); font-size: 12px; }
-button.bitllot-pick:active, button.bitllot-pick:focus-visible { border-color: var(--ink); }
-.share { margin: 4px 0 0; padding: 12px; background: #fff; border-radius: 10px; font: 16px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; user-select: text; -webkit-user-select: text; }
-.art { width: 100%; max-width: 280px; justify-self: center; color: var(--ink); }
-@media (prefers-reduced-motion: reduce) { .hint { animation: none; } .toast { transition: none; } }
-.fps { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); font: 600 11px ui-monospace, Menlo, monospace; background: rgba(0,0,0,.55); color: #fff; padding: 3px 6px; border-radius: 4px; pointer-events: none; }
+.fps { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); font: 600 11px ui-monospace, Menlo, monospace; background: rgba(0, 0, 0, .55); color: #fff; padding: 3px 6px; border-radius: 4px; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) { .hint, .rack.point { animation: none; } .toast, .club, .club .club-ico { transition: none; } }

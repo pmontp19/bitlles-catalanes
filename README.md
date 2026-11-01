@@ -41,7 +41,8 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
 
 ### Modes
 
-- **Tutorial:** set lliçons curtes, de 6,5 m a 8 m (llançar, apuntar, efecte, fer bitlla, pubilla, tria 3 de 4 i la regla dels 45°). El menú el proposa com a primera opció fins que l'acabes o el saltes.
+- **Aprèn a jugar:** set lliçons jugables sobre el *control* del joc: llançar, apuntar, efecte, triar el bitllot al bastidor, deixar-ne una, la pubilla i el tria 3 de 4 amb els bitllots estalviats. El menú el proposa com a primera opció fins que l'acabes o el saltes.
+- **Les regles del joc:** llibret il·lustrat del reglament real (el joc, el material, la plantada, la tirada, la puntuació, bitlla tombada i la partida) i un qüestionari de cinc preguntes per posar-se a prova.
 - **Partida ràpida:** 9 tirades a 9,5 m.
 - **Plantada del dia:** la mateixa pubilla i el mateix vent per a tothom. En acabar es pot copiar el resultat per compartir-lo:
 
@@ -51,6 +52,10 @@ Abans de llançar pots tocar un dels bitllots de baix per triar quin llances.
   🪵🟨⬛
   🟫🟨🟫
   ```
+
+## Interfície
+
+Té un toc d'esqueumorfisme: el menú és un rètol de fusta, les lliçons són notes clavades amb xinxeta, les regles són un llibret, el marcador és una pissarra, els bitllots reposen en un bastidor de fusta, els resultats surten com un segell de tinta, el transportador dels 45° és de llautó i el final de partida és una acta escrita a mà. Les fonts (Zilla Slab, Caveat i Source Serif 4, llicència OFL) van allotjades al joc.
 
 ## Estètiques
 

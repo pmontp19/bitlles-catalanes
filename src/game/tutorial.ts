@@ -1,8 +1,16 @@
-// Lliçons del tutorial. Cada lliçó és una tirada preparada amb un objectiu concret.
+// "Aprèn a jugar": tutorial de la MECÀNICA del joc (controls i sistemes propis de Bitlla!).
+// Les regles del reglament real s'expliquen a part, al llibret de `regles.ts`.
 import type { BitllotKind } from './rules';
 import type { ThrowInput } from './physics';
 
-export type LessonCheck = (s: { down: boolean[]; startDown: boolean[]; pubilla: number | null; inputs: ThrowInput[] }) => boolean;
+export type LessonCheck = (s: {
+  down: boolean[];
+  startDown: boolean[];
+  pubilla: number | null;
+  inputs: ThrowInput[];
+  /** Tipus de bitllot llançat a cada intent. */
+  kinds: BitllotKind[];
+}) => boolean;
 
 export type Lesson = {
   id: string;
@@ -17,8 +25,10 @@ export type Lesson = {
   bitllots: BitllotKind[];
   /** Mostra la mà fantasma fent el gest. */
   ghost?: 'straight' | 'angle' | 'curve';
+  /** Assenyala el bastidor de bitllots. */
+  pointRack?: boolean;
   /** Lliçó sense tirada: només explicació (amb il·lustració). */
-  explainOnly?: 'tria' | 'angle';
+  explainOnly?: 'tria';
   check: LessonCheck;
   success: string;
   fail: string;
@@ -71,55 +81,55 @@ export const LESSONS: Lesson[] = [
     fail: 'Fes el gest en forma de C: comença recte, corba cap a la dreta i acaba cap a l\'esquerra.',
   },
   {
-    id: 'bitlla',
-    title: 'Fes bitlla',
-    intro: 'La clau del joc: tombar-ne cinc i deixar-ne una dreta val 10 punts. Tombar-les totes sis només en val 6. Ja n\'hi ha tres de tombades: tomba\'n dues més i deixa\'n una.',
+    id: 'bitllot',
+    title: 'Tria el bitllot',
+    intro: 'A baix tens el bastidor amb els bitllots de la tirada. Cada un es comporta diferent: l\'alzina pesa i arrasa, el boix és lleuger i rebota, el de cinta dona més control i el torçat fa més efecte. Toca\'n un per triar-lo abans de llançar.',
+    goal: 'Tria el boix al bastidor i llança\'l',
+    distance: 8,
+    present: ALL,
+    pubilla: null,
+    bitllots: ['alzina', 'boix', 'cinta'],
+    pointRack: true,
+    check: (s) => s.kinds.includes('boix'),
+    success: 'Ja saps canviar de bitllot.',
+    fail: 'Abans de llançar, toca el bitllot de boix al bastidor de baix.',
+  },
+  {
+    id: 'deixan-una',
+    title: 'Deixa\'n una',
+    intro: 'Al reglament, tombar-ne cinc i deixar-ne una dreta val més que tombar-les totes. Ja n\'hi ha tres de tombades: tomba\'n dues més amb precisió.',
     goal: 'Deixa exactament una bitlla dreta',
     distance: 8,
     present: [true, true, false, false, true, false],
     pubilla: null,
     bitllots: ['cinta', 'cinta', 'cinta'],
     check: (s) => s.down.filter(Boolean).length === 5,
-    success: 'BITLLA! 10 punts.',
+    success: 'Bitlla! 10 punts.',
     fail: 'No ha quedat exactament una bitlla dreta. Precisió, no força.',
   },
   {
     id: 'pubilla',
     title: 'La pubilla',
-    intro: 'A cada tirada hi ha una bitlla coronada: la pubilla. Si fas bitlla i la que queda dreta és ella, és una bitlla d\'or i val el doble.',
+    intro: 'Això és propi del joc: a cada tirada hi ha una bitlla coronada, la pubilla. Si fas bitlla i la que queda dreta és ella, és una bitlla d\'or i val el doble.',
     goal: 'Tomba les del mig i deixa la pubilla dreta',
     distance: 8,
     present: [false, true, true, false, true, false],
     pubilla: 2,
     bitllots: ['cinta', 'cinta', 'cinta'],
     check: (s) => s.down.filter(Boolean).length === 5 && !s.down[2],
-    success: 'BITLLA D\'OR! 20 punts.',
+    success: 'Bitlla d\'or! 20 punts.',
     fail: 'La pubilla ha de quedar dreta i la resta, tombades.',
   },
   {
     id: 'tria',
-    title: 'Tria 3 de 4',
-    intro: 'Com al reglament, portes quatre bitllots a la pista i en llances tres. A cada ronda tries quin deixes a la banqueta.',
+    title: 'Tria 3 de 4 i bitllots estalviats',
+    intro: 'A la partida portes quatre bitllots i, a l\'inici de cada ronda, en deixes un a la banqueta. I si fas bitlla abans del tercer bitllot, els que no llances s\'estalvien: cada un suma ×0,5 a la tirada següent.',
     goal: '',
     distance: 8,
     present: ALL,
     pubilla: null,
     bitllots: [],
     explainOnly: 'tria',
-    check: () => true,
-    success: '',
-    fail: '',
-  },
-  {
-    id: 'angle',
-    title: 'La regla dels 45°',
-    intro: 'Una bitlla compta com a tombada quan queda inclinada menys de 45° respecte al terra. Si una bitlla tentineja a prop del límit, el temps s\'alenteix: aguanta la respiració.',
-    goal: '',
-    distance: 8,
-    present: ALL,
-    pubilla: null,
-    bitllots: [],
-    explainOnly: 'angle',
     check: () => true,
     success: '',
     fail: '',
